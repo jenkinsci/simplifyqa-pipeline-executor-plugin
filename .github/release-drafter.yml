@@ -1,0 +1,2 @@
+_extends: .github
+tag-template: SimplifyQA-Pipeline-Executor-Plugin-$NEXT_MINOR_VERSION
