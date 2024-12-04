@@ -116,7 +116,7 @@ public class SimplifyQAPipelineExecutor extends Builder implements SimpleBuildSt
         }
     }
 
-    @Symbol("greet")
+    @Symbol("welcome")
     @Extension
     public static final class DescriptorImpl extends BuildStepDescriptor<Builder> {
 
