@@ -17,12 +17,10 @@ import java.io.IOException;
 import jenkins.tasks.SimpleBuildStep;
 import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.DataBoundConstructor;
-import org.kohsuke.stapler.DataBoundSetter;
 
 public class SimplifyQAPipelineExecutor extends Builder implements SimpleBuildStep {
 
     private final String name;
-    private boolean useFrench;
     private final SimplifyQAService pipelineService = new SimplifyQAService();
     private final SimplifyQAUtils simplifyQAUtils = new SimplifyQAUtils();
 
@@ -33,15 +31,6 @@ public class SimplifyQAPipelineExecutor extends Builder implements SimpleBuildSt
 
     public String getName() {
         return name;
-    }
-
-    public boolean isUseFrench() {
-        return useFrench;
-    }
-
-    @DataBoundSetter
-    public void setUseFrench(boolean useFrench) {
-        this.useFrench = useFrench;
     }
 
     public void perform(Run<?, ?> run, FilePath workspace, EnvVars env, Launcher launcher, TaskListener listener)
@@ -97,13 +86,11 @@ public class SimplifyQAPipelineExecutor extends Builder implements SimpleBuildSt
             if (execObj.getMetadata().getFailedPercent()
                     >= execObj.getMetadata().getThreshold()) {
                 listener.getLogger().println("Threshold reached (" + threshold + "%). Stopping execution...");
-                pipelineService.stopPipelineExecution(
-                        apiUrl, apiKey, execObj.getProjectId(), execObj.getId(), listener);
+                pipelineService.stopExecution(apiUrl, apiKey, execObj.getProjectId(), execObj.getId());
                 run.setResult(Result.FAILURE);
             } else if ("FAILED".equalsIgnoreCase(execObj.getStatus())) {
                 listener.getLogger().println("Execution failed. Stopping pipeline...");
-                pipelineService.stopPipelineExecution(
-                        apiUrl, apiKey, execObj.getProjectId(), execObj.getId(), listener);
+                pipelineService.stopExecution(apiUrl, apiKey, execObj.getProjectId(), execObj.getId());
                 run.setResult(Result.FAILURE);
             } else {
                 listener.getLogger().println("Execution completed successfully.");
@@ -111,12 +98,12 @@ public class SimplifyQAPipelineExecutor extends Builder implements SimpleBuildSt
             }
         } catch (Exception e) {
             listener.getLogger().println("Error occurred: " + e.getMessage());
-            pipelineService.stopPipelineExecution(apiUrl, apiKey, execObj.getProjectId(), execObj.getId(), listener);
+            pipelineService.stopExecution(apiUrl, apiKey, execObj.getProjectId(), execObj.getId());
             run.setResult(Result.FAILURE);
         }
     }
 
-    @Symbol("welcome")
+    @Symbol("simplifyQA")
     @Extension
     public static final class DescriptorImpl extends BuildStepDescriptor<Builder> {
 

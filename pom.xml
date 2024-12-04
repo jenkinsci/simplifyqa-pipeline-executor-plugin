@@ -63,13 +63,25 @@
     <dependency>
       <groupId>io.jenkins.plugins</groupId>
       <artifactId>json-api</artifactId>
-      <version>20240303-41.v94e11e6de726</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.httpcomponents</groupId>
+      <artifactId>httpclient</artifactId>
+      <version>4.5.13</version>
+      <!-- You can use the latest stable version -->
+    </dependency>
+
+    <!-- Apache HttpCore dependency (transitive dependency required for HttpClient) -->
+    <dependency>
+      <groupId>org.apache.httpcomponents</groupId>
+      <artifactId>httpcore</artifactId>
+      <version>4.4.13</version>
+      <!-- Make sure the version matches the HttpClient version -->
     </dependency>
     <dependency>
       <groupId>org.jenkins-ci.plugins</groupId>
       <artifactId>structs</artifactId>
     </dependency>
-
     <dependency>
       <groupId>org.jenkins-ci.plugins.workflow</groupId>
       <artifactId>workflow-basic-steps</artifactId>

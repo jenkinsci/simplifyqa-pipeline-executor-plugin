@@ -7,14 +7,22 @@ import hudson.ProxyConfiguration;
 import hudson.model.TaskListener;
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.InetSocketAddress;
 import java.net.Proxy;
 import java.net.URL;
+import java.util.HashMap;
+import java.util.Map;
 import jenkins.model.Jenkins;
 import net.sf.json.JSONException;
 import net.sf.json.JSONObject;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpPatch;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClients;
+import org.apache.http.util.EntityUtils;
 
 public class SimplifyQAService {
     private final SimplifyQAUtils simplifyQAUtils = new SimplifyQAUtils();
@@ -121,10 +129,38 @@ public class SimplifyQAService {
         }
     }
 
-    public void stopPipelineExecution(String apiUrl, String apiKey, int projectId, int execId, TaskListener listener) {
-        String urlStr = apiUrl + "/pl/exec/stop/" + projectId + "/" + execId;
-        listener.getLogger().println("Stopping execution at: " + urlStr);
-        makeApiCall("POST", urlStr, apiKey, listener);
+
+
+    public Map<String, Object> stopExecution(String apiUrl, String apiKey, int projectId, int execId) {
+        String urlString = apiUrl + "/pl/exec/stop/" + projectId + "/" + execId;
+
+        try (CloseableHttpClient client = HttpClients.createDefault()) {
+            // Create the PATCH request
+            HttpPatch patch = new HttpPatch(urlString);
+
+            // Set headers
+            patch.setHeader("Content-Type", "application/json");
+            patch.setHeader("Authorization", "Bearer " + apiKey);
+
+            try (CloseableHttpResponse response = client.execute(patch)) {
+                int responseCode = response.getStatusLine().getStatusCode();
+                String responseMessage = EntityUtils.toString(response.getEntity());
+
+                // Build the result map
+                Map<String, Object> result = new HashMap<>();
+                result.put("data", responseMessage);
+                result.put("status", responseCode);
+                return result;
+            }
+        } catch (IOException e) {
+            System.err.println("Error in stopping the pipeline execution: " + e.getMessage());
+
+            // Return error response
+            Map<String, Object> errorResult = new HashMap<>();
+            errorResult.put("data", null);
+            errorResult.put("status", null);
+            return errorResult;
+        }
     }
 
     private HttpURLConnection createConnection(String urlStr, String method, String apiKey, TaskListener listener)
@@ -146,45 +182,4 @@ public class SimplifyQAService {
         return connection;
     }
 
-    public boolean makeApiCall(String method, String urlStr, String apiKey, TaskListener listener) {
-        try {
-
-            HttpURLConnection connection = createConnection(urlStr, "POST", apiKey, listener);
-
-            int responseCode = connection.getResponseCode();
-            listener.getLogger().println("Response Code (" + method + "): " + responseCode);
-            if (responseCode >= 400) {
-                BufferedReader in = new BufferedReader(new InputStreamReader(connection.getErrorStream(), "UTF-8"));
-                StringBuilder errorResponse = new StringBuilder();
-                String errorLine;
-                while ((errorLine = in.readLine()) != null) {
-                    errorResponse.append(errorLine);
-                }
-                in.close();
-                listener.getLogger().println("Error Response Body: " + errorResponse.toString());
-            }
-            if (responseCode >= 200 && responseCode < 300) {
-                BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream(), "UTF-8"));
-                StringBuilder response = new StringBuilder();
-                String inputLine;
-
-                while ((inputLine = in.readLine()) != null) {
-                    response.append(inputLine);
-                }
-                in.close();
-
-                String responseBody = response.toString();
-                listener.getLogger().println("Response Body: " + responseBody);
-
-                return responseBody != null && !responseBody.isEmpty();
-            } else {
-                listener.getLogger().println("API call failed with response code: " + responseCode);
-                return false;
-            }
-
-        } catch (IOException e) {
-            listener.getLogger().println("Error during API call (" + method + "): " + e.getMessage());
-            return false;
-        }
-    }
 }
