@@ -7,7 +7,6 @@ import hudson.ProxyConfiguration;
 import hudson.model.TaskListener;
 import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.InetSocketAddress;
@@ -129,8 +128,6 @@ public class SimplifyQAService {
         }
     }
 
-
-
     public Map<String, Object> stopExecution(String apiUrl, String apiKey, int projectId, int execId) {
         String urlString = apiUrl + "/pl/exec/stop/" + projectId + "/" + execId;
 
@@ -181,5 +178,4 @@ public class SimplifyQAService {
         connection.setRequestProperty("Content-Type", "application/json");
         return connection;
     }
-
 }

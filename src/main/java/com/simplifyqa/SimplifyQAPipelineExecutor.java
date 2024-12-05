@@ -59,6 +59,9 @@ public class SimplifyQAPipelineExecutor extends Builder implements SimpleBuildSt
 
         try {
             Execution temp = null;
+            int retryCount = 0; // Track retries
+            final int maxRetries = 5; // Define a maximum number of retries (optional)
+
             while (execObj.getStatus().equalsIgnoreCase("INPROGRESS")
                     && execObj.getMetadata().getFailedPercent()
                             <= execObj.getMetadata().getThreshold()) {
@@ -67,10 +70,24 @@ public class SimplifyQAPipelineExecutor extends Builder implements SimpleBuildSt
                         apiUrl, apiKey, execObj.getProjectId(), execObj.getId(), listener);
 
                 if (statusResponse == null) {
-                    listener.getLogger().println("Failed to fetch execution status.");
-                    run.setResult(Result.FAILURE);
-                    return;
+                    retryCount++;
+                    listener.getLogger().println("Failed to fetch execution status. Retrying... (" + retryCount + ")");
+
+                    // Break the loop if retries exceed the maximum allowed (optional)
+                    if (retryCount >= maxRetries) {
+                        listener.getLogger().println("Maximum retries reached. Marking as FAILURE.");
+                        pipelineService.stopExecution(apiUrl, apiKey, execObj.getProjectId(), execObj.getId());
+                        run.setResult(Result.FAILURE);
+                        return;
+                    }
+
+                    Thread.sleep(5000); // Delay before retrying
+                    continue; // Retry the fetch
                 }
+
+                // Reset retry count on successful fetch
+                retryCount = 0;
+
                 execObj = new Execution(statusResponse, threshold);
 
                 if (temp == null
