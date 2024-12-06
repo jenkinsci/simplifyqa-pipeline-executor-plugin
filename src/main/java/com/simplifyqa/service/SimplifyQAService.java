@@ -93,39 +93,52 @@ public class SimplifyQAService {
 
     public Execution fetchPipelineStatus(
             String apiUrl, String apiKey, int projectId, int execId, TaskListener listener) {
+
         String urlStr = apiUrl + "/pl/exec/status/" + projectId + "/" + execId;
         listener.getLogger().println("Fetching status from: " + urlStr);
-        try {
 
-            HttpURLConnection connection = createConnection(urlStr, "GET", apiKey, listener);
+        long startTime = System.currentTimeMillis(); // Start tracking retry time
+        long maxDuration = 60 * 1000; // Maximum duration of 1 minute for retries
+        int retryDelay = 5000; // Retry delay of 5 seconds
 
-            int responseCode = connection.getResponseCode();
-            if (responseCode >= 200 && responseCode < 300) {
-                BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream(), "UTF-8"));
-                StringBuilder response = new StringBuilder();
-                String line;
-                while ((line = in.readLine()) != null) {
-                    response.append(line);
+        while ((System.currentTimeMillis() - startTime) < maxDuration) {
+            try {
+                HttpURLConnection connection = createConnection(urlStr, "GET", apiKey, listener);
+
+                int responseCode = connection.getResponseCode();
+                if (responseCode >= 200 && responseCode < 300) {
+                    BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream(), "UTF-8"));
+                    StringBuilder response = new StringBuilder();
+                    String line;
+                    while ((line = in.readLine()) != null) {
+                        response.append(line);
+                    }
+                    in.close();
+
+                    JSONObject jsonResponse = JSONObject.fromObject(response.toString());
+                    String status = jsonResponse.getString("status");
+
+                    listener.getLogger().println("Status: " + status);
+                    IExecution executionData = simplifyQAUtils.createExecutionFromApiResponse(response.toString());
+
+                    // Return ExecutionResponse with Execution object as the first parameter
+                    return new Execution(executionData) {};
+                } else if (responseCode == 500) {
+                    listener.getLogger().println("Server returned 500 error. Retrying...");
+                    Thread.sleep(retryDelay); // Wait before retrying
+                } else {
+                    listener.getLogger().println("Failed to fetch status, response code: " + responseCode);
+                    return null;
                 }
-                in.close();
-
-                JSONObject jsonResponse = JSONObject.fromObject(response.toString());
-                String status = jsonResponse.getString("status");
-
-                listener.getLogger().println("Status: " + status);
-                IExecution executionData = simplifyQAUtils.createExecutionFromApiResponse(response.toString());
-
-                // Return ExecutionResponse with Execution object as the first parameter
-                return new Execution(executionData) {};
-            } else {
-                listener.getLogger().println("Failed to fetch status, response code: " + responseCode);
+            } catch (Exception e) {
+                listener.getLogger().println("Error fetching status: " + e.getMessage());
                 return null;
             }
-
-        } catch (Exception e) {
-            listener.getLogger().println("Error fetching status: " + e.getMessage());
-            return null;
         }
+
+        // If retries fail for one minute, log and return null
+        listener.getLogger().println("Retry duration exceeded 1 minute. Marking as FAILURE.");
+        return null;
     }
 
     public Map<String, Object> stopExecution(String apiUrl, String apiKey, int projectId, int execId) {
