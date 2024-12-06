@@ -59,10 +59,14 @@ public class SimplifyQAPipelineExecutor extends Builder implements SimpleBuildSt
 
         try {
             Execution temp = null;
-            while (execObj.getStatus().equalsIgnoreCase("INPROGRESS")
-                    && execObj.getMetadata().getFailedPercent()
-                            <= execObj.getMetadata().getThreshold()) {
-
+            while (execObj.getStatus().equalsIgnoreCase("INPROGRESS")) {
+                double failedPercent = execObj.getMetadata().getFailedPercent();
+                if (failedPercent >= threshold) {
+                    listener.getLogger().println("Threshold reached (" + threshold + "%). Stopping execution...");
+                    pipelineService.stopExecution(apiUrl, apiKey, execObj.getProjectId(), execObj.getId());
+                    run.setResult(Result.FAILURE);
+                    return;
+                }
                 Execution statusResponse = pipelineService.fetchPipelineStatus(
                         apiUrl, apiKey, execObj.getProjectId(), execObj.getId(), listener);
 
@@ -85,12 +89,7 @@ public class SimplifyQAPipelineExecutor extends Builder implements SimpleBuildSt
                 Thread.sleep(5000); // Delay for status polling
             }
 
-            if (execObj.getMetadata().getFailedPercent()
-                    >= execObj.getMetadata().getThreshold()) {
-                listener.getLogger().println("Threshold reached (" + threshold + "%). Stopping execution...");
-                pipelineService.stopExecution(apiUrl, apiKey, execObj.getProjectId(), execObj.getId());
-                run.setResult(Result.FAILURE);
-            } else if ("FAILED".equalsIgnoreCase(execObj.getStatus())) {
+         if ("FAILED".equalsIgnoreCase(execObj.getStatus())) {
                 listener.getLogger().println("Execution failed. Stopping pipeline...");
                 pipelineService.stopExecution(apiUrl, apiKey, execObj.getProjectId(), execObj.getId());
                 run.setResult(Result.FAILURE);
