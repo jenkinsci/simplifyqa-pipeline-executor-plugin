@@ -1,7 +1,7 @@
-# SimplifyQA Pipeline Executor
+# SimplifyQA Automation Hub
 
 ## Overview
-The **SimplifyQA Pipeline Executor** is a Jenkins plugin that enables users to integrate and manage pipeline executions directly from Jenkins. By leveraging APIs, it provides real-time execution updates, status monitoring, and threshold-based control.
+The **SimplifyQA Automation Hub** is a Jenkins plugin that enables users to integrate and manage pipeline executions directly from Jenkins. By leveraging APIs, it provides real-time execution updates, status monitoring, and threshold-based control.
 
 ---
 
