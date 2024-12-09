@@ -9,7 +9,7 @@ import java.util.List;
 import java.util.logging.Logger;
 
 public class SimplifyQAUtils {
-    public IExecution createExecutionFromApiResponse(String responseBody) {
+    public static IExecution createExecutionFromApiResponse(String responseBody) {
         ObjectMapper mapper = new ObjectMapper();
         try {
             // Deserialize JSON into Execution object (which implements IExecution)

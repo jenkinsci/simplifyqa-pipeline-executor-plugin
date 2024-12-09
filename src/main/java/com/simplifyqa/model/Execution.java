@@ -13,7 +13,7 @@ public class Execution implements IExecution {
     private int id;
     private int projectId;
     private String agentId;
-    private String authkey;
+//    private String authkey;
     private boolean childExecution;
     private String cloudType;
     private String code;
@@ -66,7 +66,7 @@ public class Execution implements IExecution {
         this.id = data.getId();
         this.projectId = data.getProjectId();
         this.agentId = data.getAgentId();
-        this.authkey = data.getAuthkey();
+//        this.authkey = data.getAuthkey();
         this.childExecution = data.isChildExecution();
         this.cloudType = data.getCloudType();
         this.code = data.getCode();
@@ -185,13 +185,13 @@ public class Execution implements IExecution {
         this.agentId = agentId;
     }
 
-    public String getAuthkey() {
-        return authkey;
-    }
-
-    public void setAuthkey(String authkey) {
-        this.authkey = authkey;
-    }
+//    public String getAuthkey() {
+//        return authkey;
+//    }
+//
+//    public void setAuthkey(String authkey) {
+//        this.authkey = authkey;
+//    }
 
     public boolean isChildExecution() {
         return childExecution;

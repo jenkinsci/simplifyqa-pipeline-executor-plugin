@@ -19,20 +19,6 @@ import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.DataBoundConstructor;
 
 public class SimplifyQAPipelineExecutor extends Builder implements SimpleBuildStep {
-
-    private final String name;
-    private final SimplifyQAService pipelineService = new SimplifyQAService();
-    private final SimplifyQAUtils simplifyQAUtils = new SimplifyQAUtils();
-
-    @DataBoundConstructor
-    public SimplifyQAPipelineExecutor(String name) {
-        this.name = name;
-    }
-
-    public String getName() {
-        return name;
-    }
-
     public void perform(Run<?, ?> run, FilePath workspace, EnvVars env, Launcher launcher, TaskListener listener)
             throws InterruptedException, IOException {
         String apiUrl = env.get("API URL");
@@ -45,7 +31,7 @@ public class SimplifyQAPipelineExecutor extends Builder implements SimpleBuildSt
         listener.getLogger().println("API URL: " + apiUrl);
         listener.getLogger().println("Pipeline ID: " + pipelineId);
 
-        Execution response = pipelineService.startPipelineExecution(apiUrl, apiKey, pipelineId, listener);
+        Execution response = SimplifyQAService.startPipelineExecution(apiUrl, apiKey, pipelineId, listener);
         if (response == null) {
             listener.getLogger().println("Failed to start execution.");
             run.setResult(Result.FAILURE);
@@ -55,7 +41,7 @@ public class SimplifyQAPipelineExecutor extends Builder implements SimpleBuildSt
         Execution execObj = new Execution((Execution) response, threshold);
 
         listener.getLogger().println("Execution started with status: " + execObj.getStatus());
-        simplifyQAUtils.printStatus(execObj);
+        SimplifyQAUtils.printStatus(execObj);
 
         try {
             Execution temp = null;
@@ -63,16 +49,16 @@ public class SimplifyQAPipelineExecutor extends Builder implements SimpleBuildSt
                 double failedPercent = execObj.getMetadata().getFailedPercent();
                 if (failedPercent >= threshold) {
                     listener.getLogger().println("Threshold reached (" + threshold + "%). Stopping execution...");
-                    pipelineService.stopExecution(apiUrl, apiKey, execObj.getProjectId(), execObj.getId());
+                    SimplifyQAService.stopExecution(apiUrl, apiKey, execObj.getProjectId(), execObj.getId());
                     run.setResult(Result.FAILURE);
                     return;
                 }
-                Execution statusResponse = pipelineService.fetchPipelineStatus(
+                Execution statusResponse = SimplifyQAService.fetchPipelineStatus(
                         apiUrl, apiKey, execObj.getProjectId(), execObj.getId(), listener);
 
                 if (statusResponse == null) {
                     listener.getLogger().println("Failed to fetch execution status after retries. Marking as FAILURE.");
-                    pipelineService.stopExecution(apiUrl, apiKey, execObj.getProjectId(), execObj.getId());
+                    SimplifyQAService.stopExecution(apiUrl, apiKey, execObj.getProjectId(), execObj.getId());
                     run.setResult(Result.FAILURE);
                     return;
                 }
@@ -82,7 +68,7 @@ public class SimplifyQAPipelineExecutor extends Builder implements SimpleBuildSt
                 if (temp == null
                         || temp.getMetadata().getExecutedPercent()
                                 < execObj.getMetadata().getExecutedPercent()) {
-                    simplifyQAUtils.printStatus(execObj);
+                    SimplifyQAUtils.printStatus(execObj);
                 }
 
                 temp = execObj;
@@ -91,7 +77,7 @@ public class SimplifyQAPipelineExecutor extends Builder implements SimpleBuildSt
 
          if ("FAILED".equalsIgnoreCase(execObj.getStatus())) {
                 listener.getLogger().println("Execution failed. Stopping pipeline...");
-                pipelineService.stopExecution(apiUrl, apiKey, execObj.getProjectId(), execObj.getId());
+                SimplifyQAService.stopExecution(apiUrl, apiKey, execObj.getProjectId(), execObj.getId());
                 run.setResult(Result.FAILURE);
             } else {
                 listener.getLogger().println("Execution completed successfully.");
@@ -99,7 +85,7 @@ public class SimplifyQAPipelineExecutor extends Builder implements SimpleBuildSt
             }
         } catch (Exception e) {
             listener.getLogger().println("Error occurred: " + e.getMessage());
-            pipelineService.stopExecution(apiUrl, apiKey, execObj.getProjectId(), execObj.getId());
+            SimplifyQAService.stopExecution(apiUrl, apiKey, execObj.getProjectId(), execObj.getId());
             run.setResult(Result.FAILURE);
         }
     }

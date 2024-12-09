@@ -24,9 +24,8 @@ import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
 
 public class SimplifyQAService {
-    private final SimplifyQAUtils simplifyQAUtils = new SimplifyQAUtils();
 
-    public Execution startPipelineExecution(String apiUrl, String apiKey, String pipelineId, TaskListener listener) {
+    public static Execution startPipelineExecution(String apiUrl, String apiKey, String pipelineId, TaskListener listener) {
         String urlStr = apiUrl + "/pl/exec/start/" + pipelineId;
         try {
 
@@ -72,7 +71,7 @@ public class SimplifyQAService {
                     listener.getLogger()
                             .println("API call successful. Project ID: " + projectId + ", Execution ID: " + execId);
 
-                    IExecution executionData = simplifyQAUtils.createExecutionFromApiResponse(responseBody);
+                    IExecution executionData = SimplifyQAUtils.createExecutionFromApiResponse(responseBody);
 
                     // Return ExecutionResponse with Execution object as the first parameter
                     return new Execution(executionData) {};
@@ -91,7 +90,7 @@ public class SimplifyQAService {
         }
     }
 
-    public Execution fetchPipelineStatus(
+    public static Execution fetchPipelineStatus(
             String apiUrl, String apiKey, int projectId, int execId, TaskListener listener) {
 
         String urlStr = apiUrl + "/pl/exec/status/" + projectId + "/" + execId;
@@ -119,7 +118,7 @@ public class SimplifyQAService {
                     String status = jsonResponse.getString("status");
 
                     listener.getLogger().println("Status: " + status);
-                    IExecution executionData = simplifyQAUtils.createExecutionFromApiResponse(response.toString());
+                    IExecution executionData = SimplifyQAUtils.createExecutionFromApiResponse(response.toString());
 
                     // Return ExecutionResponse with Execution object as the first parameter
                     return new Execution(executionData) {};
@@ -141,7 +140,7 @@ public class SimplifyQAService {
         return null;
     }
 
-    public Map<String, Object> stopExecution(String apiUrl, String apiKey, int projectId, int execId) {
+    public static Map<String, Object> stopExecution(String apiUrl, String apiKey, int projectId, int execId) {
         String urlString = apiUrl + "/pl/exec/stop/" + projectId + "/" + execId;
 
         try (CloseableHttpClient client = HttpClients.createDefault()) {
@@ -173,7 +172,7 @@ public class SimplifyQAService {
         }
     }
 
-    private HttpURLConnection createConnection(String urlStr, String method, String apiKey, TaskListener listener)
+    private static HttpURLConnection createConnection(String urlStr, String method, String apiKey, TaskListener listener)
             throws IOException {
         URL url = new URL(urlStr);
         HttpURLConnection connection;

@@ -16,7 +16,7 @@ public interface IExecution {
 
     String getAgentId();
 
-    String getAuthkey();
+//    String getAuthkey();
 
     boolean isChildExecution();
 
