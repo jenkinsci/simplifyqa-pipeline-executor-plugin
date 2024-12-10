@@ -25,7 +25,8 @@ import org.apache.http.util.EntityUtils;
 
 public class SimplifyQAService {
 
-    public static Execution startPipelineExecution(String apiUrl, String apiKey, String pipelineId, TaskListener listener) {
+    public static Execution startPipelineExecution(
+            String apiUrl, String apiKey, String pipelineId, TaskListener listener) {
         String urlStr = apiUrl + "/pl/exec/start/" + pipelineId;
         try {
 
@@ -172,8 +173,8 @@ public class SimplifyQAService {
         }
     }
 
-    private static HttpURLConnection createConnection(String urlStr, String method, String apiKey, TaskListener listener)
-            throws IOException {
+    private static HttpURLConnection createConnection(
+            String urlStr, String method, String apiKey, TaskListener listener) throws IOException {
         URL url = new URL(urlStr);
         HttpURLConnection connection;
 

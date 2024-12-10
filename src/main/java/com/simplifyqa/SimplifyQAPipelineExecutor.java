@@ -16,15 +16,15 @@ import hudson.tasks.Builder;
 import java.io.IOException;
 import jenkins.tasks.SimpleBuildStep;
 import org.jenkinsci.Symbol;
-import org.kohsuke.stapler.DataBoundConstructor;
 
 public class SimplifyQAPipelineExecutor extends Builder implements SimpleBuildStep {
     public void perform(Run<?, ?> run, FilePath workspace, EnvVars env, Launcher launcher, TaskListener listener)
             throws InterruptedException, IOException {
-//        String apiUrl = env.get("API URL");
-//        String apiKey = env.get("API Key");
-//        String pipelineId = env.get("Pipeline ID");
-//        double threshold = Double.parseDouble(env.getOrDefault("Threshold", "100")); // Default to 100 if not provided
+        //        String apiUrl = env.get("API URL");
+        //        String apiKey = env.get("API Key");
+        //        String pipelineId = env.get("Pipeline ID");
+        //        double threshold = Double.parseDouble(env.getOrDefault("Threshold", "100")); // Default to 100 if not
+        // provided
         String apiUrl = System.getenv("API_URL");
         String apiKey = System.getenv("API_KEY");
         String pipelineId = System.getenv("PIPELINE_ID");
@@ -78,7 +78,7 @@ public class SimplifyQAPipelineExecutor extends Builder implements SimpleBuildSt
                 Thread.sleep(5000); // Delay for status polling
             }
 
-         if ("FAILED".equalsIgnoreCase(execObj.getStatus())) {
+            if ("FAILED".equalsIgnoreCase(execObj.getStatus())) {
                 listener.getLogger().println("Execution failed. Stopping pipeline...");
                 SimplifyQAService.stopExecution(apiUrl, apiKey, execObj.getProjectId(), execObj.getId());
                 run.setResult(Result.FAILURE);
