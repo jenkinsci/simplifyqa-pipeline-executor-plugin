@@ -21,11 +21,14 @@ import org.kohsuke.stapler.DataBoundConstructor;
 public class SimplifyQAPipelineExecutor extends Builder implements SimpleBuildStep {
     public void perform(Run<?, ?> run, FilePath workspace, EnvVars env, Launcher launcher, TaskListener listener)
             throws InterruptedException, IOException {
-        String apiUrl = env.get("API URL");
-        String apiKey = env.get("API Key");
-        String pipelineId = env.get("Pipeline ID");
-        double threshold = Double.parseDouble(env.getOrDefault("Threshold", "100")); // Default to 100 if not provided
-
+//        String apiUrl = env.get("API URL");
+//        String apiKey = env.get("API Key");
+//        String pipelineId = env.get("Pipeline ID");
+//        double threshold = Double.parseDouble(env.getOrDefault("Threshold", "100")); // Default to 100 if not provided
+        String apiUrl = System.getenv("API_URL");
+        String apiKey = System.getenv("API_KEY");
+        String pipelineId = System.getenv("PIPELINE_ID");
+        double threshold = Double.parseDouble(System.getenv("THRESHOLD"));
         listener.getLogger().println("********** SIMPLIFYQA PIPELINE EXECUTOR **********");
         listener.getLogger().println("Pipeline Execution Started...");
         listener.getLogger().println("API URL: " + apiUrl);

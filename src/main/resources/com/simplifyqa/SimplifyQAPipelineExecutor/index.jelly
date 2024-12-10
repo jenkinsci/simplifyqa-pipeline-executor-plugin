@@ -1,0 +1,4 @@
+<?jelly escape-by-default='true'?>
+<div>
+    SimplifyQA Automation Hub is a plugin which is meant to be used with the pipelines module of SimplifyQA.
+</div>
