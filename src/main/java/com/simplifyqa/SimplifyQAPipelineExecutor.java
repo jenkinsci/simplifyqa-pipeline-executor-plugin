@@ -52,6 +52,7 @@ public class SimplifyQAPipelineExecutor extends Builder implements SimpleBuildSt
         listener.getLogger().println("Pipeline Execution Started...");
         listener.getLogger().println("API URL: " + apiUrl);
         listener.getLogger().println("Pipeline ID: " + pipelineId);
+        listener.getLogger().println("Threshold percentage: " + threshold);
 
         Execution response = SimplifyQAService.startPipelineExecution(apiUrl, apiKey, pipelineId, listener);
         if (response == null) {
