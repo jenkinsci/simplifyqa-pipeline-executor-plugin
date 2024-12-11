@@ -1,0 +1,15 @@
+<?jelly escape-by-default='true'?>
+<j:jelly xmlns:j="jelly:core" xmlns:f="/lib/form">
+    <f:entry title="API_URL" field="apiUrl">
+        <f:textbox />
+    </f:entry>
+    <f:entry title="API_KEY" field="apiKey">
+        <f:password />
+    </f:entry>
+    <f:entry title="PIPELINE_ID" field="pipelineId">
+        <f:textbox />
+    </f:entry>
+    <f:entry title="THRESHOLD" field="threshold">
+        <f:number />
+    </f:entry>
+</j:jelly>

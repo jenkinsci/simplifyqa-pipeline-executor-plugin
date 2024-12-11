@@ -7,28 +7,47 @@ import hudson.EnvVars;
 import hudson.Extension;
 import hudson.FilePath;
 import hudson.Launcher;
-import hudson.model.AbstractProject;
-import hudson.model.Result;
-import hudson.model.Run;
-import hudson.model.TaskListener;
+import hudson.model.*;
 import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.Builder;
 import java.io.IOException;
 import jenkins.tasks.SimpleBuildStep;
 import org.jenkinsci.Symbol;
+import org.kohsuke.stapler.DataBoundConstructor;
 
 public class SimplifyQAPipelineExecutor extends Builder implements SimpleBuildStep {
+    private final String pipelineId;
+    private final String apiUrl;
+    private final String apiKey;
+    private final double threshold;
+
+    @DataBoundConstructor
+    public SimplifyQAPipelineExecutor(String apiUrl, String apiKey, String pipelineId, double threshold) {
+        this.apiUrl = apiUrl;
+        this.apiKey = apiKey;
+        this.pipelineId = pipelineId;
+        this.threshold = threshold;
+    }
+
+    public String getApiUrl() {
+        return apiUrl;
+    }
+
+    public String getApiKey() {
+        return apiKey;
+    }
+
+    public String getPipelineId() {
+        return pipelineId;
+    }
+
+    public double getThreshold() {
+        return threshold;
+    }
+
     public void perform(Run<?, ?> run, FilePath workspace, EnvVars env, Launcher launcher, TaskListener listener)
             throws InterruptedException, IOException {
-        //        String apiUrl = env.get("API URL");
-        //        String apiKey = env.get("API Key");
-        //        String pipelineId = env.get("Pipeline ID");
-        //        double threshold = Double.parseDouble(env.getOrDefault("Threshold", "100")); // Default to 100 if not
-        // provided
-        String apiUrl = System.getenv("API_URL");
-        String apiKey = System.getenv("API_KEY");
-        String pipelineId = System.getenv("PIPELINE_ID");
-        double threshold = Double.parseDouble(System.getenv("THRESHOLD"));
+        listener.getLogger().println("********** FETCHING VALUES **********");
         listener.getLogger().println("********** SIMPLIFYQA PIPELINE EXECUTOR **********");
         listener.getLogger().println("Pipeline Execution Started...");
         listener.getLogger().println("API URL: " + apiUrl);
@@ -104,7 +123,7 @@ public class SimplifyQAPipelineExecutor extends Builder implements SimpleBuildSt
 
         @Override
         public String getDisplayName() {
-            return "SimplifyQA";
+            return "SimplifyQA Pipeline Executor";
         }
     }
 }
