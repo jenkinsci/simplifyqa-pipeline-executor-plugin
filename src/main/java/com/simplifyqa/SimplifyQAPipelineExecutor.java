@@ -55,8 +55,7 @@ public class SimplifyQAPipelineExecutor extends Builder implements SimpleBuildSt
         listener.getLogger().println("Pipeline ID: " + pipelineId);
         listener.getLogger().println("Threshold percentage: " + threshold);
 
-        Execution response =
-                SimplifyQAService.startPipelineExecution(apiUrl, getApiKey(), pipelineId, listener);
+        Execution response = SimplifyQAService.startPipelineExecution(apiUrl, getApiKey(), pipelineId, listener);
         if (response == null) {
             listener.getLogger().println("Failed to start execution.");
             run.setResult(Result.FAILURE);
@@ -74,8 +73,7 @@ public class SimplifyQAPipelineExecutor extends Builder implements SimpleBuildSt
                 double failedPercent = execObj.getMetadata().getFailedPercent();
                 if (failedPercent >= threshold) {
                     listener.getLogger().println("Threshold reached (" + threshold + "%). Stopping execution...");
-                    SimplifyQAService.stopExecution(
-                            apiUrl, getApiKey(), execObj.getProjectId(), execObj.getId());
+                    SimplifyQAService.stopExecution(apiUrl, getApiKey(), execObj.getProjectId(), execObj.getId());
                     run.setResult(Result.FAILURE);
                     return;
                 }
@@ -84,8 +82,7 @@ public class SimplifyQAPipelineExecutor extends Builder implements SimpleBuildSt
 
                 if (statusResponse == null) {
                     listener.getLogger().println("Failed to fetch execution status after retries. Marking as FAILURE.");
-                    SimplifyQAService.stopExecution(
-                            apiUrl, getApiKey(), execObj.getProjectId(), execObj.getId());
+                    SimplifyQAService.stopExecution(apiUrl, getApiKey(), execObj.getProjectId(), execObj.getId());
                     run.setResult(Result.FAILURE);
                     return;
                 }
@@ -104,8 +101,7 @@ public class SimplifyQAPipelineExecutor extends Builder implements SimpleBuildSt
 
             if ("FAILED".equalsIgnoreCase(execObj.getStatus())) {
                 listener.getLogger().println("Execution failed. Stopping pipeline...");
-                SimplifyQAService.stopExecution(
-                        apiUrl, getApiKey(), execObj.getProjectId(), execObj.getId());
+                SimplifyQAService.stopExecution(apiUrl, getApiKey(), execObj.getProjectId(), execObj.getId());
                 run.setResult(Result.FAILURE);
             } else {
                 listener.getLogger().println("Execution completed successfully.");
