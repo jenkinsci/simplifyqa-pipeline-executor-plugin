@@ -10,7 +10,7 @@
   </parent>
 
   <groupId>io.jenkins.plugins</groupId>
-  <artifactId>old-simplifyqa-pipeline-executor</artifactId>
+  <artifactId>simplifyqa-pipeline-executor</artifactId>
   <version>${revision}${changelist}</version>
   <packaging>hpi</packaging>
 
