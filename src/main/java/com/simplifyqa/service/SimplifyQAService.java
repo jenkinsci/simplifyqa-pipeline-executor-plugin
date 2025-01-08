@@ -17,11 +17,12 @@ import java.util.Map;
 import jenkins.model.Jenkins;
 import net.sf.json.JSONException;
 import net.sf.json.JSONObject;
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpPatch;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClients;
-import org.apache.http.util.EntityUtils;
+import org.apache.hc.client5.http.classic.methods.HttpPatch;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
+import org.apache.hc.client5.http.impl.classic.HttpClients;
+import org.apache.hc.core5.http.ParseException;
+import org.apache.hc.core5.http.io.entity.EntityUtils;
 
 public class SimplifyQAService {
 
@@ -153,7 +154,7 @@ public class SimplifyQAService {
             patch.setHeader("Authorization", "Bearer " + apiKey);
 
             try (CloseableHttpResponse response = client.execute(patch)) {
-                int responseCode = response.getStatusLine().getStatusCode();
+                int responseCode = response.getCode();
                 String responseMessage = EntityUtils.toString(response.getEntity());
 
                 // Build the result map
@@ -161,6 +162,8 @@ public class SimplifyQAService {
                 result.put("data", responseMessage);
                 result.put("status", responseCode);
                 return result;
+            } catch (ParseException e) {
+                throw new RuntimeException(e);
             }
         } catch (IOException e) {
             System.err.println("Error in stopping the pipeline execution: " + e.getMessage());

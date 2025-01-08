@@ -34,7 +34,7 @@
     <changelist>-SNAPSHOT</changelist>
 
     <!-- https://www.jenkins.io/doc/developer/plugin-development/choosing-jenkins-baseline/ -->
-    <jenkins.version>2.440.3</jenkins.version>
+    <jenkins.version>2.387.1</jenkins.version>
     <gitHubRepo>jenkinsci/${project.artifactId}-plugin</gitHubRepo>
 
     <spotless.check.skip>false</spotless.check.skip>
@@ -45,27 +45,24 @@
       <dependency>
         <!-- Pick up common dependencies for the selected LTS line: https://github.com/jenkinsci/bom#usage -->
         <groupId>io.jenkins.tools.bom</groupId>
-        <artifactId>bom-2.440.x</artifactId>
-        <version>3193.v330d8248d39e</version>
+        <artifactId>bom-2.387.x</artifactId>
+        <version>2543.vfb_1a_5fb_9496d</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
     </dependencies>
   </dependencyManagement>
   <dependencies>
-    <!-- https://mvnrepository.com/artifact/io.jenkins.plugins/json-api -->
     <dependency>
       <groupId>io.jenkins.plugins</groupId>
-      <artifactId>json-api</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.jenkins-ci.plugins</groupId>
-      <artifactId>apache-httpcomponents-client-4-api</artifactId>
+      <artifactId>apache-httpcomponents-client-5-api</artifactId>
     </dependency>
 
     <dependency>
-      <groupId>org.jenkins-ci.plugins</groupId>
-      <artifactId>jackson2-api</artifactId>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-databind</artifactId>
+      <version>2.16.2</version>
+      <scope>provided</scope>
     </dependency>
   </dependencies>
 
