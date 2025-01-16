@@ -12,6 +12,7 @@ import java.net.HttpURLConnection;
 import java.net.InetSocketAddress;
 import java.net.Proxy;
 import java.net.URL;
+import java.security.cert.X509Certificate;
 import java.util.HashMap;
 import java.util.Map;
 import jenkins.model.Jenkins;
@@ -23,6 +24,11 @@ import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
 import org.apache.hc.client5.http.impl.classic.HttpClients;
 import org.apache.hc.core5.http.ParseException;
 import org.apache.hc.core5.http.io.entity.EntityUtils;
+
+import javax.net.ssl.HttpsURLConnection;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.X509TrustManager;
 
 public class SimplifyQAService {
 
@@ -180,18 +186,29 @@ public class SimplifyQAService {
             String urlStr, String method, String apiKey, TaskListener listener) throws IOException {
         URL url = new URL(urlStr);
         HttpURLConnection connection;
-
         ProxyConfiguration proxyConfig = Jenkins.get().proxy;
         Proxy proxy = Proxy.NO_PROXY;
         if (proxyConfig != null) {
             proxy = new Proxy(Proxy.Type.HTTP, new InetSocketAddress(proxyConfig.name, proxyConfig.port));
             listener.getLogger().println("Using proxy: " + proxyConfig.name + ":" + proxyConfig.port);
-        }
 
-        connection = (HttpURLConnection) url.openConnection(proxy);
-        connection.setRequestMethod(method);
+        }    connection = (HttpURLConnection) url.openConnection(proxy);
+        if (connection instanceof HttpsURLConnection) {
+            try {            // Create a trust manager that does not validate certificate chains
+                 TrustManager[] trustAllCerts = new TrustManager[] {
+                         new X509TrustManager() {
+                             public X509Certificate[] getAcceptedIssuers() {
+                                 return null;                    }
+                             public void checkClientTrusted(X509Certificate[] certs, String authType) {}
+                             public void checkServerTrusted(X509Certificate[] certs, String authType) {}                }            };            // Install the all-trusting trust manager
+                 SSLContext sslContext = SSLContext.getInstance("TLS");
+                 sslContext.init(null, trustAllCerts, new java.security.SecureRandom());
+                 ((HttpsURLConnection) connection).setSSLSocketFactory(sslContext.getSocketFactory());            // Disable hostname verification
+                 ((HttpsURLConnection) connection).setHostnameVerifier((hostname, session) -> true);
+            } catch (Exception e) {
+                throw new IOException("Failed to create a SSL context", e);
+            }    }    connection.setRequestMethod(method);
         connection.setRequestProperty("Authorization", "Bearer " + apiKey);
         connection.setRequestProperty("Content-Type", "application/json");
-        return connection;
-    }
+        return connection;}
 }
