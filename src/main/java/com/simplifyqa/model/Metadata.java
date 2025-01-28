@@ -18,7 +18,6 @@ public class Metadata implements IMetadata {
 
     public Metadata() {}
 
-
     public Metadata(double threshold, boolean verbose, boolean isKilled, Execution execution) {
         this.threshold = threshold > 0 ? threshold : 100.0;
         this.verbose = verbose;
