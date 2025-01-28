@@ -62,7 +62,7 @@ public class SimplifyQAPipelineExecutor extends Builder implements SimpleBuildSt
             return;
         }
 
-        Execution execObj = new Execution((Execution) response, threshold);
+        Execution execObj = new Execution(response, threshold);
 
         listener.getLogger().println("Execution started with status: " + execObj.getStatus());
         SimplifyQAUtils.printStatus(execObj);

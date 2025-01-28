@@ -1,6 +1,8 @@
 package com.simplifyqa.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -40,7 +42,7 @@ public class Execution implements IExecution {
     private Map<String, Object> extraPreferences;
     private String status;
     private List<String> tags; // Nullable
-    private List<Testcase> testcases;
+    private List<Testcase> testcases = new ArrayList<>();
     private String type;
     private Integer userstoryId; // Nullable
     private Metadata metadata;

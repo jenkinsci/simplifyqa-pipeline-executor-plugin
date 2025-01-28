@@ -18,37 +18,61 @@ public class Metadata implements IMetadata {
 
     public Metadata() {}
 
+
     public Metadata(double threshold, boolean verbose, boolean isKilled, Execution execution) {
         this.threshold = threshold > 0 ? threshold : 100.0;
         this.verbose = verbose;
         this.isKilled = isKilled;
 
         // Initialize counts
-        this.totalCount = execution.getTestcases().size();
-        this.passedCount = 0;
-        this.failedCount = 0;
-        this.skippedCount = 0;
-
-        // Calculate counts based on test case statuses
-        for (Testcase testCase : execution.getTestcases()) {
-            String status = testCase.getStatus();
-            if (status != null) {
-                switch (status.toUpperCase()) {
-                    case "PASSED":
-                        this.passedCount++;
-                        break;
-                    case "FAILED":
-                        this.failedCount++;
-                        break;
-                    case "SKIPPED":
-                        this.skippedCount++;
-                        break;
-                    default:
-                        System.out.println("Unexpected status: " + status); // Example: Logging the unexpected status
-                        break;
+        if (execution.getTestcases() != null) {
+            this.totalCount = execution.getTestcases().size();
+            for (Testcase testCase : execution.getTestcases()) {
+                String status = testCase.getStatus();
+                if (status != null) {
+                    switch (status.toUpperCase()) {
+                        case "PASSED":
+                            this.passedCount++;
+                            break;
+                        case "FAILED":
+                            this.failedCount++;
+                            break;
+                        case "SKIPPED":
+                            this.skippedCount++;
+                            break;
+                        default:
+                            System.out.println(
+                                    "Unexpected status: " + status); // Example: Logging the unexpected status
+                            break;
+                    }
                 }
             }
+        } else {
+            this.totalCount = 0;
+            System.out.println("Testcases list is null.");
         }
+
+        // Calculate counts based on test case statuses
+        //        for (Testcase testCase : execution.getTestcases()) {
+        //            String status = testCase.getStatus();
+        //            if (status != null) {
+        //                switch (status.toUpperCase()) {
+        //                    case "PASSED":
+        //                        this.passedCount++;
+        //                        break;
+        //                    case "FAILED":
+        //                        this.failedCount++;
+        //                        break;
+        //                    case "SKIPPED":
+        //                        this.skippedCount++;
+        //                        break;
+        //                    default:
+        //                        System.out.println("Unexpected status: " + status); // Example: Logging the unexpected
+        // status
+        //                        break;
+        //                }
+        //            }
+        //        }
 
         // Compute percentages
         this.executedCount = this.passedCount + this.failedCount + this.skippedCount;

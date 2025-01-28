@@ -1,8 +1,11 @@
 package com.simplifyqa.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
 import java.util.List;
 import java.util.Map;
 
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class Testcase implements ITestcase {
     private int testcaseId;
     private String testcaseName;
