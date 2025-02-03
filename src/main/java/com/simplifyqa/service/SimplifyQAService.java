@@ -126,9 +126,10 @@ public class SimplifyQAService {
 
                     listener.getLogger().println("Status: " + status);
                     IExecution executionData = SimplifyQAUtils.createExecutionFromApiResponse(response.toString());
-
+                    Execution resp = new Execution(executionData);
+                    resp.setStatus(status);
                     // Return ExecutionResponse with Execution object as the first parameter
-                    return new Execution(executionData) {};
+                    return resp;
                 } else if (responseCode == 500) {
                     listener.getLogger().println("Server returned 500 error. Retrying...");
                     Thread.sleep(retryDelay); // Wait before retrying

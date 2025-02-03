@@ -69,7 +69,7 @@ public class SimplifyQAPipelineExecutor extends Builder implements SimpleBuildSt
 
         try {
             Execution temp = null;
-            while (execObj.getStatus().equalsIgnoreCase("INPROGRESS")) {
+            while ("INPROGRESS".equalsIgnoreCase(execObj.getStatus())) {
                 double failedPercent = execObj.getMetadata().getFailedPercent();
                 if (failedPercent >= threshold) {
                     listener.getLogger().println("Threshold reached (" + threshold + "%). Stopping execution...");
