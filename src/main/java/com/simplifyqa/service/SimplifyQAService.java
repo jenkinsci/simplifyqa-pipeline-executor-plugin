@@ -104,7 +104,7 @@ public class SimplifyQAService {
         listener.getLogger().println("Fetching status from: " + urlStr);
 
         long startTime = System.currentTimeMillis(); // Start tracking retry time
-        long maxDuration = 60 * 1000; // Maximum duration of 1 minute for retries
+        long maxDuration = 60 * 5000; // Maximum duration of 1 minute for retries
         int retryDelay = 5000; // Retry delay of 5 seconds
 
         while ((System.currentTimeMillis() - startTime) < maxDuration) {
@@ -123,15 +123,26 @@ public class SimplifyQAService {
 
                     JSONObject jsonResponse = JSONObject.fromObject(response.toString());
                     String status = jsonResponse.getString("status");
+                    int projectID=jsonResponse.getInt("projectId");
+                    int executionId=jsonResponse.getInt("id");
 
                     listener.getLogger().println("Status: " + status);
                     IExecution executionData = SimplifyQAUtils.createExecutionFromApiResponse(response.toString());
                     Execution resp = new Execution(executionData);
                     resp.setStatus(status);
+                    resp.setProjectId(projectID);
+                    resp.setId(executionId);
                     // Return ExecutionResponse with Execution object as the first parameter
                     return resp;
                 } else if (responseCode == 500) {
-                    listener.getLogger().println("Server returned 500 error. Retrying...");
+                    BufferedReader errorStream = new BufferedReader(new InputStreamReader(connection.getErrorStream(), "UTF-8"));
+                    StringBuilder errorResponse = new StringBuilder();
+                    String errorLine;
+                    while ((errorLine = errorStream.readLine()) != null) {
+                        errorResponse.append(errorLine);
+                    }
+                    errorStream.close();
+                    listener.getLogger().println("Server returned 500 error: " + errorResponse.toString());
                     Thread.sleep(retryDelay); // Wait before retrying
                 } else {
                     listener.getLogger().println("Failed to fetch status, response code: " + responseCode);
@@ -144,7 +155,7 @@ public class SimplifyQAService {
         }
 
         // If retries fail for one minute, log and return null
-        listener.getLogger().println("Retry duration exceeded 1 minute. Marking as FAILURE.");
+        listener.getLogger().println("Retry duration exceeded 5 minute. Marking as FAILURE.");
         return null;
     }
 

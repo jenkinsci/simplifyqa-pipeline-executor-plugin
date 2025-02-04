@@ -98,7 +98,12 @@ public class SimplifyQAPipelineExecutor extends Builder implements SimpleBuildSt
                 temp = execObj;
                 Thread.sleep(5000); // Delay for status polling
             }
-
+            double failedPercent = execObj.getMetadata().getFailedPercent();
+            double passedPercent = execObj.getMetadata().getPassedPercent();
+            double executedPercent = execObj.getMetadata().getExecutedPercent();
+            listener.getLogger().println("Executed Percent: " + executedPercent);
+            listener.getLogger().println("Passed Percent: " + passedPercent);
+            listener.getLogger().println("Failed Percent: " + failedPercent);
             if ("FAILED".equalsIgnoreCase(execObj.getStatus())) {
                 listener.getLogger().println("Execution failed. Stopping pipeline...");
                 SimplifyQAService.stopExecution(apiUrl, getApiKey(), execObj.getProjectId(), execObj.getId());
