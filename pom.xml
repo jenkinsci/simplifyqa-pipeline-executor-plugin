@@ -11,7 +11,7 @@
 
   <groupId>io.jenkins.plugins</groupId>
   <artifactId>simplifyqa-pipeline-executor</artifactId>
-  <version>1.11</version>
+  <version>${revision}${changelist}</version>
   <packaging>hpi</packaging>
 
   <name>SimplifyQA Automation Hub</name>
@@ -30,7 +30,7 @@
   </scm>
 
   <properties>
-    <revision>1.11</revision>
+    <revision>1.12</revision>
     <changelist>-SNAPSHOT</changelist>
 
     <!-- https://www.jenkins.io/doc/developer/plugin-development/choosing-jenkins-baseline/ -->
