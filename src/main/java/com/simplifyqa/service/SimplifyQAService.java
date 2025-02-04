@@ -123,8 +123,8 @@ public class SimplifyQAService {
 
                     JSONObject jsonResponse = JSONObject.fromObject(response.toString());
                     String status = jsonResponse.getString("status");
-                    int projectID=jsonResponse.getInt("projectId");
-                    int executionId=jsonResponse.getInt("id");
+                    int projectID = jsonResponse.getInt("projectId");
+                    int executionId = jsonResponse.getInt("id");
 
                     listener.getLogger().println("Status: " + status);
                     IExecution executionData = SimplifyQAUtils.createExecutionFromApiResponse(response.toString());
@@ -135,7 +135,8 @@ public class SimplifyQAService {
                     // Return ExecutionResponse with Execution object as the first parameter
                     return resp;
                 } else if (responseCode == 500) {
-                    BufferedReader errorStream = new BufferedReader(new InputStreamReader(connection.getErrorStream(), "UTF-8"));
+                    BufferedReader errorStream =
+                            new BufferedReader(new InputStreamReader(connection.getErrorStream(), "UTF-8"));
                     StringBuilder errorResponse = new StringBuilder();
                     String errorLine;
                     while ((errorLine = errorStream.readLine()) != null) {
