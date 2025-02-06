@@ -101,9 +101,15 @@ public class SimplifyQAPipelineExecutor extends Builder implements SimpleBuildSt
             double failedPercent = execObj.getMetadata().getFailedPercent();
             double passedPercent = execObj.getMetadata().getPassedPercent();
             double executedPercent = execObj.getMetadata().getExecutedPercent();
+            int passedCount = execObj.getMetadata().getPassedCount();
+            int failedCount = execObj.getMetadata().getFailedCount();
+            int totalCount = execObj.getMetadata().getTotalCount();
             listener.getLogger().println("Executed Percent: " + executedPercent);
             listener.getLogger().println("Passed Percent: " + passedPercent);
             listener.getLogger().println("Failed Percent: " + failedPercent);
+            listener.getLogger().println("Passed Count: " + passedCount);
+            listener.getLogger().println("Failed Count: " + failedCount);
+            listener.getLogger().println("Total Count: " + totalCount);
             if ("FAILED".equalsIgnoreCase(execObj.getStatus())) {
                 listener.getLogger().println("Execution failed. Stopping pipeline...");
                 SimplifyQAService.stopExecution(apiUrl, getApiKey(), execObj.getProjectId(), execObj.getId());

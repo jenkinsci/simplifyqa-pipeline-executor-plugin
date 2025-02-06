@@ -20,6 +20,7 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
 import jenkins.model.Jenkins;
+import net.sf.json.JSONArray;
 import net.sf.json.JSONException;
 import net.sf.json.JSONObject;
 import org.apache.hc.client5.http.classic.methods.HttpPatch;
@@ -106,6 +107,7 @@ public class SimplifyQAService {
         long startTime = System.currentTimeMillis(); // Start tracking retry time
         long maxDuration = 60 * 5000; // Maximum duration of 1 minute for retries
         int retryDelay = 5000; // Retry delay of 5 seconds
+        Map<Integer, String> previousTestCaseStatus = new HashMap<>();
 
         while ((System.currentTimeMillis() - startTime) < maxDuration) {
             try {
@@ -127,6 +129,36 @@ public class SimplifyQAService {
                     int executionId = jsonResponse.getInt("id");
 
                     listener.getLogger().println("Status: " + status);
+                    if (jsonResponse.has("testcases")) {
+                        JSONArray testCasesArray = jsonResponse.getJSONArray("testcases");
+
+                        for (int i = 0; i < testCasesArray.size(); i++) {
+                            JSONObject testCaseJson = testCasesArray.getJSONObject(i);
+                            int testcaseId = testCaseJson.getInt("testcaseId");
+                            String testcaseName = testCaseJson.getString("testcaseName");
+                            String testcaseStatus = testCaseJson.optString("status", "UNKNOWN");
+
+                            // Print every test case details every time API is called
+
+                            if (testcaseStatus.equalsIgnoreCase("INPROGRESS")
+                                    || testcaseStatus.equalsIgnoreCase("PASSED")
+                                    || testcaseStatus.equalsIgnoreCase("FAILED")) {
+                                listener.getLogger().println("Test Case ID: " + testcaseId);
+                                listener.getLogger().println("Test Case Name: " + testcaseName);
+                                listener.getLogger().println("TestCase Status: " + testcaseStatus);
+                            }
+                            listener.getLogger().println("----------------------------------------------");
+
+                            // Print only if status has changed
+                            if (!previousTestCaseStatus.containsKey(testcaseId)
+                                    || !previousTestCaseStatus.get(testcaseId).equals(testcaseStatus)) {
+                                previousTestCaseStatus.put(testcaseId, testcaseStatus);
+                            }
+                        }
+                    } else {
+                        listener.getLogger().println("No test cases found in API response.");
+                    }
+
                     IExecution executionData = SimplifyQAUtils.createExecutionFromApiResponse(response.toString());
                     Execution resp = new Execution(executionData);
                     resp.setStatus(status);
@@ -149,9 +181,11 @@ public class SimplifyQAService {
                     listener.getLogger().println("Failed to fetch status, response code: " + responseCode);
                     return null;
                 }
-            } catch (Exception e) {
-                listener.getLogger().println("Error fetching status: " + e.getMessage());
-                return null;
+            } catch (IOException e) {
+                throw new RuntimeException("Failed to fetch pipeline status", e);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new RuntimeException("Thread interrupted during retry", e);
             }
         }
 
