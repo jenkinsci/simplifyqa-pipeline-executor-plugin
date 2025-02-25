@@ -12,6 +12,9 @@ import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.Builder;
 import hudson.util.Secret;
 import java.io.IOException;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+
 import jenkins.tasks.SimpleBuildStep;
 import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.DataBoundConstructor;
@@ -73,6 +76,18 @@ public class SimplifyQAPipelineExecutor extends Builder implements SimpleBuildSt
                 double failedPercent = execObj.getMetadata().getFailedPercent();
                 if (failedPercent >= threshold) {
                     listener.getLogger().println("Threshold reached (" + threshold + "%). Stopping execution...");
+                    BigDecimal failPercent = BigDecimal.valueOf( execObj.getMetadata().getFailedPercent()).setScale(2, RoundingMode.HALF_UP);
+                    BigDecimal passedPercent = BigDecimal.valueOf(execObj.getMetadata().getPassedPercent()).setScale(2, RoundingMode.HALF_UP);
+                    BigDecimal executedPercent = BigDecimal.valueOf(execObj.getMetadata().getExecutedPercent()).setScale(2, RoundingMode.HALF_UP);
+                    int passedCount = execObj.getMetadata().getPassedCount();
+                    int failedCount = execObj.getMetadata().getFailedCount();
+                    int totalCount = execObj.getMetadata().getTotalCount();
+                    listener.getLogger().println("Executed Percent: " + executedPercent);
+                    listener.getLogger().println("Passed Percent: " + passedPercent);
+                    listener.getLogger().println("Failed Percent: " + failPercent);
+                    listener.getLogger().println("Passed Count: " + passedCount);
+                    listener.getLogger().println("Failed Count: " + failedCount);
+                    listener.getLogger().println("Total Count: " + totalCount);
                     SimplifyQAService.stopExecution(apiUrl, getApiKey(), execObj.getProjectId(), execObj.getId());
                     run.setResult(Result.FAILURE);
                     return;
@@ -98,9 +113,10 @@ public class SimplifyQAPipelineExecutor extends Builder implements SimpleBuildSt
                 temp = execObj;
                 Thread.sleep(5000); // Delay for status polling
             }
-            double failedPercent = execObj.getMetadata().getFailedPercent();
-            double passedPercent = execObj.getMetadata().getPassedPercent();
-            double executedPercent = execObj.getMetadata().getExecutedPercent();
+            BigDecimal failedPercent = BigDecimal.valueOf( execObj.getMetadata().getFailedPercent()).setScale(2, RoundingMode.HALF_UP);
+            BigDecimal passedPercent = BigDecimal.valueOf(execObj.getMetadata().getPassedPercent()).setScale(2, RoundingMode.HALF_UP);
+            BigDecimal executedPercent = BigDecimal.valueOf(execObj.getMetadata().getExecutedPercent()).setScale(2, RoundingMode.HALF_UP);
+
             int passedCount = execObj.getMetadata().getPassedCount();
             int failedCount = execObj.getMetadata().getFailedCount();
             int totalCount = execObj.getMetadata().getTotalCount();

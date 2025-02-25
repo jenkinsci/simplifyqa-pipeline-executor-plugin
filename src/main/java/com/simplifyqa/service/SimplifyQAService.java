@@ -103,7 +103,7 @@ public class SimplifyQAService {
 
         String urlStr = apiUrl + "/pl/exec/status/" + projectId + "/" + execId;
         listener.getLogger().println("Fetching status from: " + urlStr);
-
+        listener.getLogger().println("**********************************");
         long startTime = System.currentTimeMillis(); // Start tracking retry time
         long maxDuration = 60 * 5000; // Maximum duration of 1 minute for retries
         int retryDelay = 5000; // Retry delay of 5 seconds
@@ -147,7 +147,6 @@ public class SimplifyQAService {
                                 listener.getLogger().println("Test Case Name: " + testcaseName);
                                 listener.getLogger().println("TestCase Status: " + testcaseStatus);
                             }
-                            listener.getLogger().println("----------------------------------------------");
 
                             // Print only if status has changed
                             if (!previousTestCaseStatus.containsKey(testcaseId)
