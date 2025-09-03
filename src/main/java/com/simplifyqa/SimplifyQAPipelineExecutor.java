@@ -1,6 +1,5 @@
 package com.simplifyqa;
 
-
 import com.simplifyqa.model.Execution;
 import com.simplifyqa.service.SimplifyQAService;
 import com.simplifyqa.utils.SimplifyQAUtils;
@@ -165,7 +164,7 @@ public class SimplifyQAPipelineExecutor extends Builder implements SimpleBuildSt
 
                 if (temp == null
                         || temp.getMetadata().getExecutedPercent()
-                        < execObj.getMetadata().getExecutedPercent()) {
+                                < execObj.getMetadata().getExecutedPercent()) {
                     SimplifyQAUtils.printStatus(execObj);
                 }
 

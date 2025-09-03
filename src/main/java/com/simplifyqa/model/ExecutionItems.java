@@ -1,7 +1,6 @@
 package com.simplifyqa.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-
 import java.util.List;
 import java.util.Map;
 

@@ -3,11 +3,10 @@ package com.simplifyqa;
 import com.simplifyqa.Services.ExecutionServices;
 import hudson.model.Run;
 import hudson.model.TaskListener;
-import jenkins.model.RunAction2;
-import org.json.simple.JSONArray;
-
 import java.io.IOException;
 import java.text.DecimalFormat;
+import jenkins.model.RunAction2;
+import org.json.simple.JSONArray;
 
 public class ExecutionImpl implements RunAction2 {
 
