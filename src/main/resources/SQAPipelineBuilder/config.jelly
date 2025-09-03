@@ -1,0 +1,28 @@
+<?jelly escape-by-default='true'?>
+<j:jelly xmlns:j="jelly:core" xmlns:f="/lib/form">
+
+    <f:section title="Set the parameters for the execution below:">
+
+        <f:entry title="Execution Token" field="execToken" description="Your exec token">
+            <f:password />
+        </f:entry>
+
+        <f:entry title="Application URL" field="appUrl" description="Application URL">
+            <f:textbox />
+        </f:entry>
+
+        <f:advanced>
+
+            <f:entry title="Threshold (%)" field="threshold" description="Threshold percentage 0-100%">
+                <f:number min="0" max="100" />
+            </f:entry>
+
+            <f:entry title="Verbose Logging" field="verbose" description="Enable verbose logging">
+                <f:checkbox />
+            </f:entry>
+
+        </f:advanced>
+
+    </f:section>
+
+</j:jelly>

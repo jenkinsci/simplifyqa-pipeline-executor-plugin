@@ -1,0 +1,278 @@
+package com.simplifyqa;
+
+import com.simplifyqa.Services.ExecutionServices;
+import hudson.EnvVars;
+import hudson.Extension;
+import hudson.FilePath;
+import hudson.Launcher;
+import hudson.model.AbstractProject;
+import hudson.model.Result;
+import hudson.model.Run;
+import hudson.model.TaskListener;
+import hudson.tasks.BuildStepDescriptor;
+import hudson.tasks.Builder;
+import hudson.util.FormValidation;
+import jenkins.tasks.SimpleBuildStep;
+import org.jenkinsci.Symbol;
+import org.json.simple.JSONObject;
+import org.kohsuke.stapler.DataBoundConstructor;
+import org.kohsuke.stapler.DataBoundSetter;
+import org.kohsuke.stapler.QueryParameter;
+import org.kohsuke.stapler.interceptor.RequirePOST;
+
+import javax.servlet.ServletException;
+import java.io.IOException;
+import java.net.URISyntaxException;
+import java.util.ArrayList;
+import java.util.List;
+
+public class SQAPipelineBuilder extends Builder implements SimpleBuildStep {
+    @SuppressWarnings("lgtm[jenkins/plaintext-storage]")
+    private String execToken;
+
+    private String appUrl;
+    private double threshold;
+    private boolean verbose;
+
+    @DataBoundSetter
+    public void setExecToken(String execToken) {
+        this.execToken = execToken;
+    }
+
+    @DataBoundSetter
+    public void setAppUrl(String appUrl) {
+        this.appUrl = appUrl;
+    }
+
+    @DataBoundSetter
+    public void setThreshold(double threshold) {
+        this.threshold = threshold;
+    }
+
+    @DataBoundSetter
+    public void setVerbose(boolean verbose) {
+        this.verbose = verbose;
+    }
+    // Constructor
+    // Setters must be public for Jenkins to bind them
+
+    // Constructor – save the values directly
+    @DataBoundConstructor
+    public SQAPipelineBuilder(String execToken, String appUrl, double threshold, boolean verbose) {
+        this.execToken = execToken;
+        this.appUrl = appUrl;
+        this.threshold = threshold;
+        this.verbose = verbose;
+    }
+
+    // Optional: getters remain unchanged
+
+    public String getExecToken() {
+        return execToken;
+    }
+
+    public String getAppUrl() {
+        return appUrl;
+    }
+
+    public double getThreshold() {
+        return threshold;
+    }
+
+    public boolean isVerbose() {
+        return verbose;
+    }
+
+    @Override
+    public void perform(Run<?, ?> run, FilePath workspace, EnvVars env, Launcher launcher, TaskListener listener)
+            throws InterruptedException, IOException {
+
+        ExecutionServices exec_dto = new ExecutionServices();
+
+        //        if (this.execToken.length() != 88) {
+        //            run.setResult(Result.NOT_BUILT);
+        //            exec_dto.printLog(ExecutionServices.getTimestamp() + "*".repeat(51) + "EOF" + "*".repeat(51) +
+        // "\n");
+        //            return;
+        //        }
+        if (this.execToken == null || this.execToken.isBlank()) {
+            run.setResult(Result.NOT_BUILT);
+            exec_dto.printLog(ExecutionServices.getTimestamp() + "Execution token must not be empty\n");
+            exec_dto.printLog(ExecutionServices.getTimestamp() + "*".repeat(51) + "EOF" + "*".repeat(51) + "\n");
+            return;
+        }
+        ExecutionImpl exec_obj = new ExecutionImpl(this.execToken, this.appUrl, this.threshold, this.verbose, listener);
+        exec_dto.setExecObj(exec_obj);
+        run.addAction(exec_obj);
+
+        if (!exec_dto.startExec()) run.setResult(Result.NOT_BUILT);
+        else {
+            int executed = exec_obj.getExecutedTcs();
+
+            if (exec_obj.getVerbose()) exec_dto.printLog(exec_obj.getReqBody() + exec_obj.getRespBody() + "\n");
+
+            while ((exec_dto.checkExecStatus().equalsIgnoreCase("INPROGRESS"))
+                    && (exec_obj.getThreshold() > exec_obj.getFailPercent())) {
+
+                if (executed < exec_obj.getExecutedTcs()) {
+                    executed++;
+                    exec_dto.printLog(ExecutionServices.getTimestamp() + "EXECUTION STATUS: Execution "
+                            + exec_obj.getExecStatus() + " for Suite ID: SU-" + exec_obj.getCustomerId() + ""
+                            + exec_obj.getSuiteId() + "\n");
+
+                    exec_dto.printLog(
+                            " ".repeat(27) + "(Executed " + exec_obj.getExecutedTcs() + " of " + exec_obj.getTotalTcs()
+                                    + " testcase(s), execution percentage: " + exec_obj.getExecPercent() + " %)");
+
+                    exec_dto.printLog("\n" + " ".repeat(27) + "(Failed " + exec_obj.getTcsFailed() + " of "
+                            + exec_obj.getTotalTcs() + " testcase(s), fail percentage: " + exec_obj.getFailPercent()
+                            + " %)");
+
+                    exec_dto.printLog("\n" + " ".repeat(27) + "(Threshold: " + exec_obj.getThreshold() + " % i.e. "
+                            + ((exec_obj.getThreshold() / 100.00)
+                                            * Double.valueOf(exec_obj.getTotalTcs())
+                                                    .intValue()
+                                    + " of " + exec_obj.getTotalTcs() + " testcase(s))\n"));
+
+                    for (Object item : exec_obj.getResults()) {
+                        String tcCode = (((JSONObject) item).get("tcCode")).toString();
+                        String tcName = (((JSONObject) item).get("tcName")).toString();
+                        String result =
+                                (((JSONObject) item).get("result")).toString().toUpperCase();
+                        int totalSteps = Integer.parseInt((((JSONObject) item).get("totalSteps")).toString());
+
+                        exec_dto.printLog(" ".repeat(27) + tcCode + ": " + tcName + " | TESTCASE " + result
+                                + " (total steps: " + totalSteps + ")\n");
+                    }
+
+                    if (exec_obj.getVerbose()) exec_dto.printLog(exec_obj.getReqBody() + exec_obj.getRespBody() + "\n");
+
+                    if (exec_obj.getThreshold() <= exec_obj.getFailPercent()) {
+                        exec_dto.printLog("\n" + ExecutionServices.getTimestamp() + "THRESHOLD REACHED!!!");
+                        exec_obj.setExecStatus("FAILED");
+                        break;
+                    }
+                }
+            }
+
+            exec_dto.checkExecStatus();
+            exec_dto.printLog(ExecutionServices.getTimestamp() + "EXECUTION STATUS: Execution "
+                    + exec_obj.getExecStatus() + " for Suite ID: SU-" + exec_obj.getCustomerId() + ""
+                    + exec_obj.getSuiteId() + "\n");
+
+            exec_dto.printLog(
+                    " ".repeat(27) + "(Executed " + exec_obj.getExecutedTcs() + " of " + exec_obj.getTotalTcs()
+                            + " testcase(s), execution percentage: " + exec_obj.getExecPercent() + " %)");
+
+            exec_dto.printLog("\n" + " ".repeat(27) + "(Failed " + exec_obj.getTcsFailed() + " of "
+                    + exec_obj.getTotalTcs() + " testcase(s), fail percentage: " + exec_obj.getFailPercent() + " %)");
+
+            exec_dto.printLog("\n" + " ".repeat(27) + "(Threshold: " + exec_obj.getThreshold() + " % i.e. "
+                    + ((exec_obj.getThreshold() / 100.00)
+                                    * Double.valueOf(exec_obj.getTotalTcs()).intValue() + " of "
+                            + exec_obj.getTotalTcs() + " testcase(s))\n"));
+
+            for (Object item : exec_obj.getResults()) {
+                String tcCode = (((JSONObject) item).get("tcCode")).toString();
+                String tcName = (((JSONObject) item).get("tcName")).toString();
+                String result = (((JSONObject) item).get("result")).toString().toUpperCase();
+                int totalSteps = Integer.parseInt((((JSONObject) item).get("totalSteps")).toString());
+
+                exec_dto.printLog(" ".repeat(27) + tcCode + ": " + tcName + " | TESTCASE " + result + " (total steps: "
+                        + totalSteps + ")\n");
+            }
+
+            if (exec_obj.getVerbose()) exec_dto.printLog(exec_obj.getReqBody() + exec_obj.getRespBody() + "\n");
+
+            if (exec_obj.getThreshold() <= exec_obj.getFailPercent()) {
+
+                exec_dto.printLog(ExecutionServices.getTimestamp() + "EXECUTION FAILED!!");
+
+                if (exec_dto.killExec())
+                    exec_dto.printLog(ExecutionServices.getTimestamp()
+                            + "EXECUTION STATUS: SUCCESSFUL to explicitly kill the execution!\n");
+                else
+                    exec_dto.printLog(ExecutionServices.getTimestamp()
+                            + "EXECUTION STATUS: FAILED to explicitly kill the execution!\n");
+
+                if (exec_obj.getVerbose()) exec_dto.printLog(exec_obj.getReqBody() + exec_obj.getRespBody() + "\n");
+
+                run.setResult(Result.FAILURE);
+            } else {
+                exec_dto.printLog(ExecutionServices.getTimestamp() + "EXECUTION PASSED!!");
+                run.setResult(Result.SUCCESS);
+            }
+
+            exec_dto.printLog(ExecutionServices.getTimestamp() + "REPORT URL: " + exec_obj.getReportUrl() + "\n");
+        }
+
+        exec_dto.printLog(ExecutionServices.getTimestamp() + "*".repeat(51) + "EOF" + "*".repeat(51) + "\n");
+        return;
+    }
+
+    @Symbol("SQAPipelineExecutor")
+    @Extension
+    public static final class DescriptorImpl extends BuildStepDescriptor<Builder> {
+
+        @RequirePOST
+        @SuppressWarnings("lgtm[jenkins/no-permission-check]")
+        public FormValidation doCheckExec_token(@QueryParameter String value) throws IOException, ServletException {
+
+            List<FormValidation> validationList = new ArrayList<>();
+            validationList.add(FormValidation.error("Execution token must not be empty"));
+            validationList.add(FormValidation.validateRequired(value));
+
+            if (value.length() < 1) return FormValidation.aggregate(validationList);
+
+            if (value.length() != 88) return FormValidation.error("Execution token must be exactly 88 characters");
+
+            return FormValidation.ok("Valid Execution Token");
+        }
+
+        @RequirePOST
+        @SuppressWarnings("lgtm[jenkins/no-permission-check]")
+        public FormValidation doCheckApp_url(@QueryParameter String value)
+                throws IOException, ServletException, URISyntaxException {
+
+            List<FormValidation> validationList = new ArrayList<>();
+            validationList.add(FormValidation.error("App URL must not be empty"));
+            validationList.add(FormValidation.validateRequired(value));
+
+            if (value.isBlank()) return FormValidation.aggregate(validationList);
+
+            if (!(value.startsWith("http://") ^ value.startsWith("https://") ^ value.startsWith("localhost:")))
+                return FormValidation.warning("Invalid App URL (must start with http://, https:// or localhost:)");
+
+            if (ExecutionServices.getResponse(value, "GET", "").statusCode() != 200)
+                return FormValidation.warning("App URL is unreachable");
+
+            return FormValidation.ok("Valid App Url");
+        }
+
+        @SuppressWarnings("lgtm[jenkins/no-permission-check]")
+        public FormValidation doCheckThreshold(@QueryParameter double value) throws IOException, ServletException {
+
+            // return FormValidation.validateIntegerInRange(Double.toString(value), 0, 100);
+
+            if ((value < 1.00) || (value > 100.00))
+                return FormValidation.warning("Threshold must be between 1 and 100");
+
+            return FormValidation.ok("Valid Threshold");
+        }
+
+        @Override
+        public String getConfigPage() {
+            return "/SQAPipelineBuilder/config.jelly";
+        }
+
+        @Override
+        public boolean isApplicable(Class<? extends AbstractProject> aClass) {
+            return true;
+        }
+
+        @Override
+        public String getDisplayName() {
+            return "SimplifyQA (Old UI Executor)";
+        }
+    }
+}

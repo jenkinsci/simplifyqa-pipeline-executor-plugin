@@ -1,5 +1,6 @@
 package com.simplifyqa;
 
+
 import com.simplifyqa.model.Execution;
 import com.simplifyqa.service.SimplifyQAService;
 import com.simplifyqa.utils.SimplifyQAUtils;
@@ -23,13 +24,26 @@ public class SimplifyQAPipelineExecutor extends Builder implements SimpleBuildSt
     private final String apiUrl;
     private final Secret apiKey;
     private final double threshold;
+    private final int maxRetries;
+    private final int retryInterval;
+    private final int apiTimeout;
 
     @DataBoundConstructor
-    public SimplifyQAPipelineExecutor(String apiUrl, String apiKey, String pipelineId, double threshold) {
+    public SimplifyQAPipelineExecutor(
+            String apiUrl,
+            String apiKey,
+            String pipelineId,
+            double threshold,
+            int maxRetries,
+            int retryInterval,
+            int apiTimeout) {
         this.apiUrl = apiUrl;
         this.apiKey = Secret.fromString(apiKey);
         this.pipelineId = pipelineId;
         this.threshold = threshold;
+        this.maxRetries = maxRetries;
+        this.retryInterval = retryInterval;
+        this.apiTimeout = apiTimeout;
     }
 
     public String getApiUrl() {
@@ -48,6 +62,18 @@ public class SimplifyQAPipelineExecutor extends Builder implements SimpleBuildSt
         return threshold;
     }
 
+    public int getMaxRetries() {
+        return maxRetries;
+    }
+
+    public int getRetryInterval() {
+        return retryInterval;
+    }
+
+    public int getApiTimeout() {
+        return apiTimeout;
+    }
+
     public void perform(Run<?, ?> run, FilePath workspace, EnvVars env, Launcher launcher, TaskListener listener)
             throws InterruptedException, IOException {
         listener.getLogger().println("********** FETCHING VALUES **********");
@@ -56,6 +82,8 @@ public class SimplifyQAPipelineExecutor extends Builder implements SimpleBuildSt
         listener.getLogger().println("API URL: " + apiUrl);
         listener.getLogger().println("Pipeline ID: " + pipelineId);
         listener.getLogger().println("Threshold percentage: " + threshold);
+        listener.getLogger().println("MaxRetries count:" + maxRetries);
+        listener.getLogger().println("Retry Interval:" + retryInterval);
 
         Execution response = SimplifyQAService.startPipelineExecution(apiUrl, getApiKey(), pipelineId, listener);
         if (response == null) {
@@ -71,7 +99,9 @@ public class SimplifyQAPipelineExecutor extends Builder implements SimpleBuildSt
 
         try {
             Execution temp = null;
-            while ("INPROGRESS".equalsIgnoreCase(execObj.getStatus())) {
+            int retryCount = 0;
+            while ("INPROGRESS".equalsIgnoreCase(execObj.getStatus())
+                    || "NOTEXECUTED".equalsIgnoreCase(execObj.getStatus())) {
                 double failedPercent = execObj.getMetadata().getFailedPercent();
                 if (failedPercent >= threshold) {
                     listener.getLogger().println("Threshold reached (" + threshold + "%). Stopping execution...");
@@ -97,9 +127,33 @@ public class SimplifyQAPipelineExecutor extends Builder implements SimpleBuildSt
                     run.setResult(Result.FAILURE);
                     return;
                 }
-                Execution statusResponse = SimplifyQAService.fetchPipelineStatus(
-                        apiUrl, getApiKey(), execObj.getProjectId(), execObj.getId(), listener);
 
+                Execution statusResponse = null;
+                retryCount = 0;
+                int effectiveMaxRetries = maxRetries > 0 ? maxRetries : 5;
+
+                //                Execution statusResponse = SimplifyQAService.fetchPipelineStatus(
+                //                        apiUrl, getApiKey(), execObj.getProjectId(), execObj.getId(), listener);
+                while (retryCount < effectiveMaxRetries) {
+                    try {
+                        statusResponse = SimplifyQAService.fetchPipelineStatus(
+                                apiUrl,
+                                getApiKey(),
+                                execObj.getProjectId(),
+                                execObj.getId(),
+                                effectiveMaxRetries,
+                                retryInterval,
+                                apiTimeout,
+                                listener);
+                        listener.getLogger().println("Status API raw response: " + statusResponse);
+                        if (statusResponse != null) break;
+                    } catch (Exception e) {
+                        listener.getLogger().println("Attempt " + (retryCount + 1) + " failed: " + e.getMessage());
+                    }
+
+                    retryCount++;
+                    Thread.sleep(retryInterval * 1000L);
+                }
                 if (statusResponse == null) {
                     listener.getLogger().println("Failed to fetch execution status after retries. Marking as FAILURE.");
                     SimplifyQAService.stopExecution(apiUrl, getApiKey(), execObj.getProjectId(), execObj.getId());
@@ -111,7 +165,7 @@ public class SimplifyQAPipelineExecutor extends Builder implements SimpleBuildSt
 
                 if (temp == null
                         || temp.getMetadata().getExecutedPercent()
-                                < execObj.getMetadata().getExecutedPercent()) {
+                        < execObj.getMetadata().getExecutedPercent()) {
                     SimplifyQAUtils.printStatus(execObj);
                 }
 

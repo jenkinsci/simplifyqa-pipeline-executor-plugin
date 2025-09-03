@@ -3,8 +3,8 @@ package com.simplifyqa.utils;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.simplifyqa.model.Execution;
+import com.simplifyqa.model.ExecutionItems;
 import com.simplifyqa.model.IExecution;
-import com.simplifyqa.model.Testcase;
 import java.util.List;
 import java.util.logging.Logger;
 
@@ -70,14 +70,14 @@ public class SimplifyQAUtils {
                     execObj.getExecutionTypeName() != null ? execObj.getExecutionTypeName() : "N/A",
                     execObj.getType() != null ? execObj.getType() : "N/A"));
 
-            List<Testcase> testcases = execObj.getTestcases();
-            if (testcases != null && !testcases.isEmpty()) {
-                for (Testcase testcase : testcases) {
+            List<ExecutionItems> testCases = execObj.getExecutionItems();
+            if (testCases != null && !testCases.isEmpty()) {
+                for (ExecutionItems testCase : testCases) {
                     logger.info(String.format(
                             "TESTCASE ID: %d | TESTCASE STATUS: %s | TESTCASE NAME: %s",
-                            testcase.getTestcaseId(),
-                            testcase.getStatus() != null ? testcase.getStatus() : "N/A",
-                            testcase.getTestcaseName() != null ? testcase.getTestcaseName() : "N/A"));
+                            testCase.getTestcaseId(),
+                            testCase.getStatus() != null ? testCase.getStatus() : "N/A",
+                            testCase.getTestcaseName() != null ? testCase.getTestcaseName() : "N/A"));
                 }
             }
 

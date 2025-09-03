@@ -5,20 +5,6 @@ import com.simplifyqa.model.IExecution;
 import com.simplifyqa.utils.SimplifyQAUtils;
 import hudson.ProxyConfiguration;
 import hudson.model.TaskListener;
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.net.HttpURLConnection;
-import java.net.InetSocketAddress;
-import java.net.Proxy;
-import java.net.URL;
-import java.security.cert.X509Certificate;
-import java.util.HashMap;
-import java.util.Map;
-import javax.net.ssl.HttpsURLConnection;
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.TrustManager;
-import javax.net.ssl.X509TrustManager;
 import jenkins.model.Jenkins;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONException;
@@ -29,6 +15,21 @@ import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
 import org.apache.hc.client5.http.impl.classic.HttpClients;
 import org.apache.hc.core5.http.ParseException;
 import org.apache.hc.core5.http.io.entity.EntityUtils;
+
+import javax.net.ssl.HttpsURLConnection;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.X509TrustManager;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.InetSocketAddress;
+import java.net.Proxy;
+import java.net.URL;
+import java.security.cert.X509Certificate;
+import java.util.HashMap;
+import java.util.Map;
 
 public class SimplifyQAService {
 
@@ -82,6 +83,7 @@ public class SimplifyQAService {
                     IExecution executionData = SimplifyQAUtils.createExecutionFromApiResponse(responseBody);
 
                     // Return ExecutionResponse with Execution object as the first parameter
+
                     return new Execution(executionData) {};
 
                 } else {
@@ -99,19 +101,29 @@ public class SimplifyQAService {
     }
 
     public static Execution fetchPipelineStatus(
-            String apiUrl, String apiKey, int projectId, int execId, TaskListener listener) {
+            String apiUrl,
+            String apiKey,
+            int projectId,
+            int execId,
+            int maxRetries,
+            int retryInterval, // in milliseconds
+            int apiTimeout, // in milliseconds
+            TaskListener listener) {
 
         String urlStr = apiUrl + "/pl/exec/status/" + projectId + "/" + execId;
         listener.getLogger().println("Fetching status from: " + urlStr);
         listener.getLogger().println("**********************************");
-        long startTime = System.currentTimeMillis(); // Start tracking retry time
-        long maxDuration = 60 * 5000; // Maximum duration of 1 minute for retries
-        int retryDelay = 5000; // Retry delay of 5 seconds
-        Map<Integer, String> previousTestCaseStatus = new HashMap<>();
 
-        while ((System.currentTimeMillis() - startTime) < maxDuration) {
+        Map<Integer, String> previousTestCaseStatus = new HashMap<>();
+        int attempt = 0;
+
+        while (attempt < maxRetries) {
             try {
                 HttpURLConnection connection = createConnection(urlStr, "GET", apiKey, listener);
+
+                // Set timeouts
+                connection.setConnectTimeout(apiTimeout);
+                connection.setReadTimeout(apiTimeout);
 
                 int responseCode = connection.getResponseCode();
                 if (responseCode >= 200 && responseCode < 300) {
@@ -129,18 +141,16 @@ public class SimplifyQAService {
                     int executionId = jsonResponse.getInt("id");
 
                     listener.getLogger().println("Status: " + status);
-                    if (jsonResponse.has("testcases")) {
-                        JSONArray testCasesArray = jsonResponse.getJSONArray("testcases");
+                    if (jsonResponse.has("executionItems")) {
+                        JSONArray testCasesArray = jsonResponse.getJSONArray("executionItems");
 
                         for (int i = 0; i < testCasesArray.size(); i++) {
                             JSONObject testCaseJson = testCasesArray.getJSONObject(i);
-                            int testcaseId = testCaseJson.getInt("testcaseId");
-                            String testcaseName = testCaseJson.getString("testcaseName");
+                            int testcaseId = testCaseJson.getInt("id");
+                            String testcaseName = testCaseJson.getString("name");
                             String testcaseStatus = testCaseJson.optString("status", "UNKNOWN");
 
-                            // Print every test case details every time API is called
-
-                            if (testcaseStatus.equalsIgnoreCase("INPROGRESS")
+                            if (testcaseStatus.equalsIgnoreCase("NOTEXECUTED")
                                     || testcaseStatus.equalsIgnoreCase("PASSED")
                                     || testcaseStatus.equalsIgnoreCase("FAILED")) {
                                 listener.getLogger().println("Test Case ID: " + testcaseId);
@@ -148,7 +158,6 @@ public class SimplifyQAService {
                                 listener.getLogger().println("TestCase Status: " + testcaseStatus);
                             }
 
-                            // Print only if status has changed
                             if (!previousTestCaseStatus.containsKey(testcaseId)
                                     || !previousTestCaseStatus.get(testcaseId).equals(testcaseStatus)) {
                                 previousTestCaseStatus.put(testcaseId, testcaseStatus);
@@ -163,8 +172,8 @@ public class SimplifyQAService {
                     resp.setStatus(status);
                     resp.setProjectId(projectID);
                     resp.setId(executionId);
-                    // Return ExecutionResponse with Execution object as the first parameter
                     return resp;
+
                 } else if (responseCode == 500) {
                     BufferedReader errorStream =
                             new BufferedReader(new InputStreamReader(connection.getErrorStream(), "UTF-8"));
@@ -175,23 +184,128 @@ public class SimplifyQAService {
                     }
                     errorStream.close();
                     listener.getLogger().println("Server returned 500 error: " + errorResponse.toString());
-                    Thread.sleep(retryDelay); // Wait before retrying
+                    attempt++;
+                    Thread.sleep(retryInterval * 1000L);
                 } else {
                     listener.getLogger().println("Failed to fetch status, response code: " + responseCode);
                     return null;
                 }
+
             } catch (IOException e) {
-                throw new RuntimeException("Failed to fetch pipeline status", e);
+                listener.getLogger().println("IOException on attempt " + (attempt + 1) + ": " + e.getMessage());
+                attempt++;
+                try {
+                    Thread.sleep(retryInterval);
+                } catch (InterruptedException ie) {
+                    Thread.currentThread().interrupt();
+                    throw new RuntimeException("Thread interrupted during retry", ie);
+                }
             } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                throw new RuntimeException("Thread interrupted during retry", e);
+                throw new RuntimeException(e);
             }
         }
 
-        // If retries fail for one minute, log and return null
-        listener.getLogger().println("Retry duration exceeded 5 minute. Marking as FAILURE.");
+        // Exceeded max retries
+        listener.getLogger().println("Exceeded max retries (" + maxRetries + "). Marking as FAILURE.");
         return null;
     }
+
+    //    public static Execution fetchPipelineStatus(
+    //            String apiUrl, String apiKey, int projectId, int execId, TaskListener listener) {
+    //
+    //        String urlStr = apiUrl + "/pl/exec/status/" + projectId + "/" + execId;
+    //        listener.getLogger().println("Fetching status from: " + urlStr);
+    //        listener.getLogger().println("**********************************");
+    //        long startTime = System.currentTimeMillis(); // Start tracking retry time
+    //        long maxDuration = 60 * 5000; // Maximum duration of 1 minute for retries
+    //        int retryDelay = 5000; // Retry delay of 5 seconds
+    //        Map<Integer, String> previousTestCaseStatus = new HashMap<>();
+    //
+    //        while ((System.currentTimeMillis() - startTime) < maxDuration) {
+    //            try {
+    //                HttpURLConnection connection = createConnection(urlStr, "GET", apiKey, listener);
+    //
+    //                int responseCode = connection.getResponseCode();
+    //                if (responseCode >= 200 && responseCode < 300) {
+    //                    BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream(),
+    // "UTF-8"));
+    //                    StringBuilder response = new StringBuilder();
+    //                    String line;
+    //                    while ((line = in.readLine()) != null) {
+    //                        response.append(line);
+    //                    }
+    //                    in.close();
+    //
+    //                    JSONObject jsonResponse = JSONObject.fromObject(response.toString());
+    //                    String status = jsonResponse.getString("status");
+    //                    int projectID = jsonResponse.getInt("projectId");
+    //                    int executionId = jsonResponse.getInt("id");
+    //
+    //                    listener.getLogger().println("Status: " + status);
+    //                    if (jsonResponse.has("testcases")) {
+    //                        JSONArray testCasesArray = jsonResponse.getJSONArray("testcases");
+    //
+    //                        for (int i = 0; i < testCasesArray.size(); i++) {
+    //                            JSONObject testCaseJson = testCasesArray.getJSONObject(i);
+    //                            int testcaseId = testCaseJson.getInt("testcaseId");
+    //                            String testcaseName = testCaseJson.getString("testcaseName");
+    //                            String testcaseStatus = testCaseJson.optString("status", "UNKNOWN");
+    //
+    //                            // Print every test case details every time API is called
+    //
+    //                            if (testcaseStatus.equalsIgnoreCase("INPROGRESS")
+    //                                    || testcaseStatus.equalsIgnoreCase("PASSED")
+    //                                    || testcaseStatus.equalsIgnoreCase("FAILED")) {
+    //                                listener.getLogger().println("Test Case ID: " + testcaseId);
+    //                                listener.getLogger().println("Test Case Name: " + testcaseName);
+    //                                listener.getLogger().println("TestCase Status: " + testcaseStatus);
+    //                            }
+    //
+    //                            // Print only if status has changed
+    //                            if (!previousTestCaseStatus.containsKey(testcaseId)
+    //                                    || !previousTestCaseStatus.get(testcaseId).equals(testcaseStatus)) {
+    //                                previousTestCaseStatus.put(testcaseId, testcaseStatus);
+    //                            }
+    //                        }
+    //                    } else {
+    //                        listener.getLogger().println("No test cases found in API response.");
+    //                    }
+    //
+    //                    IExecution executionData =
+    // SimplifyQAUtils.createExecutionFromApiResponse(response.toString());
+    //                    Execution resp = new Execution(executionData);
+    //                    resp.setStatus(status);
+    //                    resp.setProjectId(projectID);
+    //                    resp.setId(executionId);
+    //                    // Return ExecutionResponse with Execution object as the first parameter
+    //                    return resp;
+    //                } else if (responseCode == 500) {
+    //                    BufferedReader errorStream =
+    //                            new BufferedReader(new InputStreamReader(connection.getErrorStream(), "UTF-8"));
+    //                    StringBuilder errorResponse = new StringBuilder();
+    //                    String errorLine;
+    //                    while ((errorLine = errorStream.readLine()) != null) {
+    //                        errorResponse.append(errorLine);
+    //                    }
+    //                    errorStream.close();
+    //                    listener.getLogger().println("Server returned 500 error: " + errorResponse.toString());
+    //                    Thread.sleep(retryDelay); // Wait before retrying
+    //                } else {
+    //                    listener.getLogger().println("Failed to fetch status, response code: " + responseCode);
+    //                    return null;
+    //                }
+    //            } catch (IOException e) {
+    //                throw new RuntimeException("Failed to fetch pipeline status", e);
+    //            } catch (InterruptedException e) {
+    //                Thread.currentThread().interrupt();
+    //                throw new RuntimeException("Thread interrupted during retry", e);
+    //            }
+    //        }
+    //
+    //        // If retries fail for one minute, log and return null
+    //        listener.getLogger().println("Retry duration exceeded 5 minute. Marking as FAILURE.");
+    //        return null;
+    //    }
 
     public static Map<String, Object> stopExecution(String apiUrl, String apiKey, int projectId, int execId) {
         String urlString = apiUrl + "/pl/exec/stop/" + projectId + "/" + execId;

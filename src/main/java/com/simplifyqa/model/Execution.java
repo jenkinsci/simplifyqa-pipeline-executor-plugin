@@ -1,6 +1,7 @@
 package com.simplifyqa.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -41,7 +42,7 @@ public class Execution implements IExecution {
     private Map<String, Object> extraPreferences;
     private String status;
     private List<String> tags; // Nullable
-    private List<Testcase> testcases = new ArrayList<>();
+    private List<ExecutionItems> executionItems = new ArrayList<>();
     private String type;
     private Integer userstoryId; // Nullable
     private Metadata metadata;
@@ -51,9 +52,8 @@ public class Execution implements IExecution {
     }
 
     @Override
-    public List<Testcase> getTestcases() {
-
-        return testcases;
+    public List<ExecutionItems> getExecutionItems() {
+        return executionItems;
     }
 
     public void setExtraPreferences(Map<String, Object> extraPreferences) {
@@ -94,9 +94,9 @@ public class Execution implements IExecution {
         this.result = data.getResult();
         this.status = data.getStatus();
         this.tags = data.getTags();
-        this.testcases = data.getTestcases().stream()
-                .map(testcase -> new Testcase(testcases))
-                .collect(Collectors.toList());
+        this.executionItems =
+                data.getExecutionItems().stream().map(ExecutionItems::new).collect(Collectors.toList());
+
         this.type = data.getType();
         this.userstoryId = data.getUserstoryId();
 
@@ -116,8 +116,9 @@ public class Execution implements IExecution {
             this.status = response.getStatus();
             this.metadata = response.getMetadata();
             this.projectId = response.getProjectId();
+            //            this.metadata = new Metadata(threshold, false, false, this);
             this.id = response.getId();
-            this.testcases = response.getTestcases();
+            this.executionItems = response.getExecutionItems();
         }
 
         assert response != null;
@@ -134,7 +135,7 @@ public class Execution implements IExecution {
             this.metadata = (Metadata) response.getMetadata();
             this.projectId = response.getProjectId();
             this.id = response.getId();
-            this.testcases = response.getTestcases();
+            this.executionItems = response.getExecutionItems();
         }
     }
 
@@ -394,12 +395,12 @@ public class Execution implements IExecution {
         this.tags = tags;
     }
 
-    public List<Testcase> getTestCases() {
-        return testcases;
+    public List<ExecutionItems> getTestCases() {
+        return executionItems;
     }
 
-    public void setTestcases(List<Testcase> testcases) {
-        this.testcases = testcases;
+    public void setExecutionItems(List<ExecutionItems> testCases) {
+        this.executionItems = testCases;
     }
 
     public String getType() {

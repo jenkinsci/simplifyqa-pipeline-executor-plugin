@@ -72,6 +72,11 @@
       <groupId>io.jenkins.plugins</groupId>
       <artifactId>apache-httpcomponents-client-5-api</artifactId>
     </dependency>
+    <dependency>
+      <groupId>org.apache.clerezza.ext</groupId>
+      <artifactId>org.json.simple</artifactId>
+      <version>0.4</version>
+    </dependency>
   </dependencies>
 
   <repositories>

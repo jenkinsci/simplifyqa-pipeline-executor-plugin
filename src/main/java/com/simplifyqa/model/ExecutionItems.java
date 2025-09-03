@@ -1,19 +1,20 @@
 package com.simplifyqa.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
 import java.util.List;
 import java.util.Map;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class Testcase implements ITestcase {
-    private int testcaseId;
-    private String testcaseName;
-    private String testcaseDesc;
+public class ExecutionItems implements ITestcase {
+    private int id;
+    private String name;
+    private String description;
     private String versionId;
-    private int testcaseSeq;
+    private int seq;
     private String stepId;
     private int stepCount;
-    private String tcType;
+    private String technologyType;
     private Map<String, Object> configuration;
     private List<String> iterationsSelected;
     private List<Platform> platform;
@@ -22,11 +23,67 @@ public class Testcase implements ITestcase {
     private String agentEndTime; // Optional field
     private String executionDuration; // Optional field
 
-    public Testcase() {
-        // Optionally initialize fields if necessary
+    public ExecutionItems(ITestcase testcase) {
+        this.id = testcase.getTestcaseId();
+        this.name = testcase.getTestcaseName();
+        this.description = testcase.getTestcaseDesc();
+        this.versionId = testcase.getVersionId();
+        this.seq = testcase.getTestcaseSeq();
+        this.stepId = testcase.getStepId();
+        this.stepCount = testcase.getStepCount();
+        this.technologyType = testcase.getTcType();
+        this.configuration = testcase.getConfiguration();
+        this.iterationsSelected = testcase.getIterationsSelected();
+        this.platform = testcase.getPlatform();
+        this.status = testcase.getStatus();
+        this.agentStartTime = testcase.getAgentStartTime();
+        this.agentEndTime = testcase.getAgentEndTime();
+        this.executionDuration = testcase.getExecutionDuration();
     }
 
-    public Testcase(
+    public int getId() {
+        return id;
+    }
+
+    public void setId(int id) {
+        this.id = id;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
+    public int getSeq() {
+        return seq;
+    }
+
+    public void setSeq(int seq) {
+        this.seq = seq;
+    }
+
+    public String getTechnologyType() {
+        return technologyType;
+    }
+
+    public ExecutionItems() {}
+
+    public void setTechnologyType(String technologyType) {
+        this.technologyType = technologyType;
+    }
+
+    public ExecutionItems(
             int testcaseId,
             String testcaseName,
             String testcaseDesc,
@@ -42,14 +99,14 @@ public class Testcase implements ITestcase {
             String agentStartTime,
             String agentEndTime,
             String executionDuration) {
-        this.testcaseId = testcaseId;
-        this.testcaseName = testcaseName;
-        this.testcaseDesc = testcaseDesc;
+        this.id = testcaseId;
+        this.name = testcaseName;
+        this.description = testcaseDesc;
         this.versionId = versionId;
-        this.testcaseSeq = testcaseSeq;
+        this.seq = testcaseSeq;
         this.stepId = stepId;
         this.stepCount = stepCount;
-        this.tcType = tcType;
+        this.technologyType = tcType;
         this.configuration = configuration;
         this.iterationsSelected = iterationsSelected;
         this.platform = platform;
@@ -59,30 +116,30 @@ public class Testcase implements ITestcase {
         this.executionDuration = executionDuration;
     }
 
-    public Testcase(List<Testcase> testcases) {}
+    public ExecutionItems(List<ExecutionItems> testCases) {}
 
     public int getTestcaseId() {
-        return testcaseId;
+        return id;
     }
 
     public void setTestcaseId(int testcaseId) {
-        this.testcaseId = testcaseId;
+        this.id = testcaseId;
     }
 
     public String getTestcaseName() {
-        return testcaseName;
+        return name;
     }
 
     public void setTestcaseName(String testcaseName) {
-        this.testcaseName = testcaseName;
+        this.name = testcaseName;
     }
 
     public String getTestcaseDesc() {
-        return testcaseDesc;
+        return description;
     }
 
     public void setTestcaseDesc(String testcaseDesc) {
-        this.testcaseDesc = testcaseDesc;
+        this.description = testcaseDesc;
     }
 
     public String getVersionId() {
@@ -94,11 +151,11 @@ public class Testcase implements ITestcase {
     }
 
     public int getTestcaseSeq() {
-        return testcaseSeq;
+        return seq;
     }
 
     public void setTestcaseSeq(int testcaseSeq) {
-        this.testcaseSeq = testcaseSeq;
+        this.seq = testcaseSeq;
     }
 
     public String getStepId() {
@@ -118,11 +175,11 @@ public class Testcase implements ITestcase {
     }
 
     public String getTcType() {
-        return tcType;
+        return technologyType;
     }
 
     public void setTcType(String tcType) {
-        this.tcType = tcType;
+        this.technologyType = tcType;
     }
 
     public Map<String, Object> getConfiguration() {

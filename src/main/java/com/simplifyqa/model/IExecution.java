@@ -68,7 +68,7 @@ public interface IExecution {
 
     List<String> getTags(); // Nullable
 
-    List<Testcase> getTestcases();
+    List<ExecutionItems> getExecutionItems();
 
     String getType();
 
