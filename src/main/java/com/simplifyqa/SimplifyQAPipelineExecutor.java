@@ -7,7 +7,10 @@ import hudson.EnvVars;
 import hudson.Extension;
 import hudson.FilePath;
 import hudson.Launcher;
-import hudson.model.*;
+import hudson.model.AbstractProject;
+import hudson.model.Result;
+import hudson.model.Run;
+import hudson.model.TaskListener;
 import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.Builder;
 import hudson.util.Secret;
@@ -122,7 +125,9 @@ public class SimplifyQAPipelineExecutor extends Builder implements SimpleBuildSt
                     listener.getLogger().println("Passed Count: " + passedCount);
                     listener.getLogger().println("Failed Count: " + failedCount);
                     listener.getLogger().println("Total Count: " + totalCount);
-                    SimplifyQAService.stopExecution(apiUrl, getApiKey(), execObj.getProjectId(), execObj.getId());
+                    String killType = computeKillType(execObj);
+                    SimplifyQAService.stopExecution(
+                            apiUrl, getApiKey(), execObj.getProjectId(), execObj.getId(), killType);
                     run.setResult(Result.FAILURE);
                     return;
                 }
@@ -155,7 +160,9 @@ public class SimplifyQAPipelineExecutor extends Builder implements SimpleBuildSt
                 }
                 if (statusResponse == null) {
                     listener.getLogger().println("Failed to fetch execution status after retries. Marking as FAILURE.");
-                    SimplifyQAService.stopExecution(apiUrl, getApiKey(), execObj.getProjectId(), execObj.getId());
+                    String killType = computeKillType(execObj);
+                    SimplifyQAService.stopExecution(
+                            apiUrl, getApiKey(), execObj.getProjectId(), execObj.getId(), killType);
                     run.setResult(Result.FAILURE);
                     return;
                 }
@@ -190,7 +197,8 @@ public class SimplifyQAPipelineExecutor extends Builder implements SimpleBuildSt
             listener.getLogger().println("Total Count: " + totalCount);
             if ("FAILED".equalsIgnoreCase(execObj.getStatus())) {
                 listener.getLogger().println("Execution failed. Stopping pipeline...");
-                SimplifyQAService.stopExecution(apiUrl, getApiKey(), execObj.getProjectId(), execObj.getId());
+                String killType = computeKillType(execObj);
+                SimplifyQAService.stopExecution(apiUrl, getApiKey(), execObj.getProjectId(), execObj.getId(), killType);
                 run.setResult(Result.FAILURE);
             } else {
                 listener.getLogger().println("Execution completed successfully.");
@@ -198,9 +206,42 @@ public class SimplifyQAPipelineExecutor extends Builder implements SimpleBuildSt
             }
         } catch (Exception e) {
             listener.getLogger().println("Error occurred: " + e.getMessage());
-            SimplifyQAService.stopExecution(apiUrl, getApiKey(), execObj.getProjectId(), execObj.getId());
+            String killType = computeKillType(execObj);
+            SimplifyQAService.stopExecution(apiUrl, getApiKey(), execObj.getProjectId(), execObj.getId(), killType);
             run.setResult(Result.FAILURE);
         }
+    }
+
+    // helper to compute killType similar to JS:
+    // const killType = (['PARALLEL'].includes(execObj.executionStyle?.toUpperCase()) &&
+    // ['CLOUD'].includes(execObj.mode?.toUpperCase())) ? 'STOP_EXECUTION_PARALLEL_CLOUD' : 'STOP_EXECUTION';
+    private String computeKillType(Execution exec) {
+        if (exec == null) return "STOP_EXECUTION";
+        try {
+            String execStyle = null;
+            String mode = null;
+            // Attempt to read properties; adjust method names if your Execution class uses different getters
+            try {
+                execStyle = exec.getExecutionStyle();
+            } catch (NoSuchMethodError ignored) {
+                /* ignore */
+            }
+            try {
+                mode = exec.getMode();
+            } catch (NoSuchMethodError ignored) {
+                /* ignore */
+            }
+
+            execStyle = (execStyle != null) ? execStyle.toUpperCase() : "";
+            mode = (mode != null) ? mode.toUpperCase() : "";
+
+            if ("PARALLEL".equals(execStyle) && "CLOUD".equals(mode)) {
+                return "STOP_EXECUTION_PARALLEL_CLOUD";
+            }
+        } catch (Exception e) {
+            // ignore and fallback
+        }
+        return "STOP_EXECUTION";
     }
 
     @Symbol("simplifyQA")

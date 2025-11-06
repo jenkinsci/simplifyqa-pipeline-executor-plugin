@@ -118,6 +118,8 @@ public class Execution implements IExecution {
             //            this.metadata = new Metadata(threshold, false, false, this);
             this.id = response.getId();
             this.executionItems = response.getExecutionItems();
+            this.executionStyle = response.getExecutionStyle();
+            this.mode = response.getMode();
         }
 
         assert response != null;
@@ -135,6 +137,8 @@ public class Execution implements IExecution {
             this.projectId = response.getProjectId();
             this.id = response.getId();
             this.executionItems = response.getExecutionItems();
+            this.executionStyle = response.getExecutionStyle();
+            this.mode = response.getMode();
         }
     }
 

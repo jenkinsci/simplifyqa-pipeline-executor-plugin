@@ -27,8 +27,10 @@ import org.apache.hc.client5.http.classic.methods.HttpPatch;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
 import org.apache.hc.client5.http.impl.classic.HttpClients;
+import org.apache.hc.core5.http.ContentType;
 import org.apache.hc.core5.http.ParseException;
 import org.apache.hc.core5.http.io.entity.EntityUtils;
+import org.apache.hc.core5.http.io.entity.StringEntity;
 
 public class SimplifyQAService {
 
@@ -306,8 +308,10 @@ public class SimplifyQAService {
     //        return null;
     //    }
 
-    public static Map<String, Object> stopExecution(String apiUrl, String apiKey, int projectId, int execId) {
+    public static Map<String, Object> stopExecution(
+            String apiUrl, String apiKey, int projectId, int execId, String killType) {
         String urlString = apiUrl + "/pl/exec/stop/" + projectId + "/" + execId;
+        String effectiveKillType = (killType == null || killType.isEmpty()) ? "STOP_EXECUTION" : killType;
 
         try (CloseableHttpClient client = HttpClients.createDefault()) {
             // Create the PATCH request
@@ -316,6 +320,11 @@ public class SimplifyQAService {
             // Set headers
             patch.setHeader("Content-Type", "application/json");
             patch.setHeader("Authorization", "Bearer " + apiKey);
+
+            // Add JSON body with killType
+            String reqBody = "{\"killType\":\"" + effectiveKillType + "\"}";
+
+            patch.setEntity(new StringEntity(reqBody, ContentType.APPLICATION_JSON));
 
             try (CloseableHttpResponse response = client.execute(patch)) {
                 int responseCode = response.getCode();
