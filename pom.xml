@@ -11,7 +11,7 @@
 
   <groupId>io.jenkins.plugins</groupId>
   <artifactId>simplifyqa-pipeline-executor</artifactId>
-  <version>${revision}${changelist}</version>
+  <version>1.18</version>
   <packaging>hpi</packaging>
 
   <name>SimplifyQA Automation Hub</name>
